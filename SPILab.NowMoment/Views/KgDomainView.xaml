@@ -1,0 +1,168 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/KgDomainView.xaml — 도메인 관리 화면 (SCR-B07)
+
+     구조:
+       Row 0: 헤더 + 툴바 (＋ 도메인 추가 / ✗ 삭제 / 🗑 비우기 / 🔄 새로고침)
+       Row 1: 도메인 목록 DataGrid (코드/표시명/빌더종류/구분/노드/엣지/생성일)
+       Row 2: 선택 도메인 상세 카드 (빌더 스크립트 / 출력 파일명 / 통계)
+
+     CRUD 는 v3 KgViewModel 의 AddDomainCommand/DeleteDomainCommand/
+     ClearDomainCommand 패스스루 → KgDomainEditDialog (v3).
+     ════════════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.KgDomainView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Theme.BgMain}"
+             FontFamily="맑은 고딕">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ════════ Row 0: 헤더 ════════ -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+            <TextBlock Text="🗂 도메인 관리"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource Theme.Accent}"/>
+            <TextBlock Text="KG 도메인을 등록/수정/삭제합니다. 빌트인 도메인(cs/photo/etch/cmp/thinfilm)은 삭제할 수 없습니다."
+                       Foreground="{DynamicResource Theme.FgMuted}"
+                       FontSize="12" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- ════════ Row 1: 툴바 ════════ -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Content="＋ 도메인 추가"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding AddDomainCommand}"
+                    Margin="0,0,8,0"
+                    ToolTip="새 KG 도메인 등록 (KgDomainEditDialog 호출)"/>
+            <Button Grid.Column="1" Content="✗ 선택 도메인 삭제"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding DeleteDomainCommand}"
+                    IsEnabled="{Binding IsSelectionDeletable}"
+                    Margin="0,0,8,0"
+                    ToolTip="선택된 도메인 삭제 (빌트인은 삭제 불가)"/>
+            <Button Grid.Column="2" Content="🗑 도메인 비우기"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding ClearDomainCommand}"
+                    IsEnabled="{Binding HasSelection}"
+                    Margin="0,0,8,0"
+                    ToolTip="선택된 도메인의 KG 노드/엣지를 모두 삭제 (도메인 자체는 보존)"/>
+
+            <Button Grid.Column="4" Content="🔄 새로고침"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding RefreshCommand}"/>
+        </Grid>
+
+        <!-- ════════ Row 2: 도메인 목록 DataGrid ════════ -->
+        <Border Grid.Row="2"
+                BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                CornerRadius="4">
+            <DataGrid Style="{StaticResource V4DataGrid}"
+                      ItemsSource="{Binding Rows}"
+                      SelectedItem="{Binding SelectedRow, Mode=TwoWay}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="코드"         Binding="{Binding Code}"           Width="120"/>
+                    <DataGridTextColumn Header="표시명"       Binding="{Binding Label}"          Width="2*" MinWidth="160"/>
+                    <DataGridTextColumn Header="빌더 종류"    Binding="{Binding BuilderKind}"    Width="140"/>
+                    <DataGridTextColumn Header="구분"         Binding="{Binding BuiltInBadge}"   Width="80"/>
+                    <DataGridTextColumn Header="노드"         Binding="{Binding Nodes}"          Width="80"/>
+                    <DataGridTextColumn Header="엣지"         Binding="{Binding Edges}"          Width="80"/>
+                    <DataGridTextColumn Header="출력 파일"    Binding="{Binding OutputBasename}" Width="2*" MinWidth="160"/>
+                    <DataGridTextColumn Header="생성일"
+                                        Binding="{Binding CreatedAt, StringFormat=yyyy-MM-dd}"  Width="110"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- ════════ Row 3: 선택 도메인 상세 카드 ════════ -->
+        <Border Grid.Row="3" Style="{StaticResource DetailCard}" Padding="14,12" Margin="0,12,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0"
+                        BorderBrush="{DynamicResource Theme.Accent}" BorderThickness="3,0,0,0"
+                        Padding="10,0,0,0" Margin="0,0,0,10">
+                    <TextBlock Text="{Binding SelectedHeader}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.FgPrimary}"/>
+                </Border>
+
+                <Grid Grid.Row="1" Margin="0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="빌더 종류"
+                               Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Grid.Column="1" Text="{Binding SelectedBuilderKindText}"
+                               Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"
+                               FontFamily="Consolas"/>
+                </Grid>
+
+                <Grid Grid.Row="2" Margin="0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="빌더 스크립트"
+                               Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Grid.Column="1" Text="{Binding SelectedBuilderScript}"
+                               Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"
+                               FontFamily="Consolas"
+                               TextTrimming="CharacterEllipsis"/>
+                </Grid>
+
+                <Grid Grid.Row="3" Margin="0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="출력 파일명"
+                               Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Grid.Column="1" Text="{Binding SelectedOutputBasename}"
+                               Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"
+                               FontFamily="Consolas"/>
+                </Grid>
+
+                <Grid Grid.Row="4" Margin="0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="현재 통계"
+                               Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Grid.Column="1" Text="{Binding SelectedStats}"
+                               Foreground="{DynamicResource Theme.Cyan}" FontSize="12"
+                               FontWeight="Bold"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ════════ Row 4: 풋터 ════════ -->
+        <TextBlock Grid.Row="4"
+                   Text="{Binding TotalLabel}"
+                   Foreground="{DynamicResource Theme.FgMuted}"
+                   FontSize="11"
+                   Margin="4,8,0,0"/>
+    </Grid>
+</UserControl>

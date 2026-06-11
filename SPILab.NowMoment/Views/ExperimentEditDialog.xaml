@@ -1,0 +1,208 @@
+<!-- ════════════════════════════════════════════════════════════
+     ExperimentEditDialog.xaml — v4 Phase 6 (라이트 테마, §5.5)
+
+     2-컬럼 그리드:
+       Row 0: 실험명*   | 상태
+       Row 1: 참조 자산 | 결과 파일 [찾기]
+       Row 2: 파라미터 (JSON, 멀티라인 full)
+       Row 3: 지표     (JSON, 멀티라인 full)
+     ════════════════════════════════════════════════════════════ -->
+<Window x:Class="SPILab.NowMoment.Views.ExperimentEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SPILab.NowMoment.Views"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="자산 등록 — 실험 / 측정 데이터"
+        Width="920" Height="760"
+        MinWidth="820" MinHeight="640"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="{DynamicResource Theme.BgMain}"
+        FontFamily="맑은 고딕"
+        WindowStyle="None"
+        AllowsTransparency="False">
+    <!-- WindowChrome: WindowStyle=None 시 상단에 남는 시스템 흰 테두리 제거 -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            GlassFrameThickness="0"
+                            CornerRadius="0"
+                            ResizeBorderThickness="6"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+    <Border BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1,0,1,1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="56"/>    <!-- 헤더 -->
+                <RowDefinition Height="Auto"/>  <!-- 본문 (기본 정보) - 내용 높이만 -->
+                <RowDefinition Height="Auto"/>  <!-- 푸터 - 본문 바로 아래 밀착 -->
+                <RowDefinition Height="*"/>     <!-- KG 노드 연결 패널 (남는 공간) -->
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Background="{DynamicResource Theme.BgDialogHeader}"
+                    MouseLeftButtonDown="Header_MouseDown">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal"
+                                VerticalAlignment="Center" Margin="24,0,0,0">
+                        <TextBlock Text="✎" Foreground="White"
+                                   FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="HeaderTitle"
+                                   Foreground="White" FontSize="15" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Text="자산 등록 — 실험 / 측정 데이터"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="✕"
+                            Style="{StaticResource DlgCloseXBtn}"
+                            Margin="0,0,10,0"
+                            Click="CloseButton_Click"/>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                          Background="{DynamicResource Theme.BgMain}">
+                <Grid Margin="28,22,28,18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Style="{StaticResource DlgSectionHeader}">
+                        <Run Text="■"/><Run Text=" 기본 정보"/>
+                    </TextBlock>
+
+                    <Grid Grid.Row="1" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="24"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="44"/>
+                            <RowDefinition Height="44"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Row 0: 실험명 * | 상태 -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource DlgFieldLabel}">
+                            <Run Text="실험명"/>
+                            <Run Text=" *" Foreground="{DynamicResource Theme.Error}"/>
+                        </TextBlock>
+                        <TextBox Grid.Row="0" Grid.Column="1"
+                                 Style="{StaticResource DlgInputBox}"
+                                 Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                 VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="0" Grid.Column="3" Style="{StaticResource DlgFieldLabel}"
+                                   Text="상태"/>
+                        <ComboBox Grid.Row="0" Grid.Column="4"
+                                  Style="{StaticResource DlgInputCombo}"
+                                  ItemsSource="{Binding Statuses}"
+                                  SelectedItem="{Binding Status}"
+                                  VerticalAlignment="Center"/>
+
+                        <!-- Row 1: 참조 자산 | 결과 파일 + [찾기] -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource DlgFieldLabel}"
+                                   Text="참조 자산"/>
+                        <TextBox Grid.Row="1" Grid.Column="1"
+                                 Style="{StaticResource DlgInputBox}"
+                                 Text="{Binding AssetRef}"
+                                 VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="1" Grid.Column="3" Style="{StaticResource DlgFieldLabel}"
+                                   Text="결과 파일"/>
+                        <Grid Grid.Row="1" Grid.Column="4" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0"
+                                     Style="{StaticResource DlgInputBox}"
+                                     Text="{Binding ResultPath}"/>
+                            <Button Grid.Column="1" Content="찾기"
+                                    Style="{StaticResource DlgKgSmallBtn}"
+                                    Command="{Binding BrowseResultCommand}"
+                                    Margin="6,0,0,0"/>
+                        </Grid>
+
+                        <!-- Row 2: 파라미터 JSON -->
+                        <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource DlgFieldLabel}"
+                                   Text="파라미터&#x0a;(JSON)"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top" Margin="0,10,12,0"/>
+                        <Grid Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Margin="0,6,0,8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text='예) {"epochs":200, "lr":0.001}'
+                                       Foreground="{DynamicResource Theme.FgMuted}"
+                                       FontFamily="Consolas" FontSize="11"
+                                       Margin="0,0,0,4"/>
+                            <TextBox Grid.Row="1"
+                                     Style="{StaticResource DlgInputMultiline}"
+                                     Text="{Binding Params}"
+                                     FontFamily="Consolas" FontSize="12"
+                                     Height="72"/>
+                        </Grid>
+
+                        <!-- Row 3: 지표 JSON -->
+                        <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource DlgFieldLabel}"
+                                   Text="지표&#x0a;(JSON)"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top" Margin="0,10,12,0"/>
+                        <Grid Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="4" Margin="0,6,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text='예) {"MAE":0.008, "R2":0.992, "accuracy":0.934}'
+                                       Foreground="{DynamicResource Theme.FgMuted}"
+                                       FontFamily="Consolas" FontSize="11"
+                                       Margin="0,0,0,4"/>
+                            <TextBox Grid.Row="1"
+                                     Style="{StaticResource DlgInputMultiline}"
+                                     Text="{Binding Metrics}"
+                                     FontFamily="Consolas" FontSize="12"
+                                     Height="72"/>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- ══ KG 노드 연결 패널 (푸터보다 아래, 다이얼로그 맨 아래) ══ -->
+            <Border Grid.Row="3"
+                    Background="{DynamicResource Theme.BgCard}"
+                    BorderBrush="{DynamicResource Theme.Border}"
+                    BorderThickness="0,1,0,0"
+                    Padding="24,14,24,18">
+                <local:AssetKgLinkPanelView DataContext="{Binding KgPanel}"
+                                            MinHeight="220"/>
+            </Border>
+
+            <Border Grid.Row="2"
+                    Background="{DynamicResource Theme.BgMain}"
+                    BorderBrush="{DynamicResource Theme.Border}"
+                    BorderThickness="0,1,0,0"
+                    Padding="24,14">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="취소"
+                            Style="{StaticResource DlgFooterCancelBtn}"
+                            IsCancel="True" Margin="0,0,8,0"
+                            Click="CancelButton_Click"/>
+                    <Button Content="저장"
+                            Style="{StaticResource DlgFooterPrimaryBtn}"
+                            IsDefault="True" Margin="0,0,8,0"
+                            Click="SaveButton_Click"/>
+                    <Button Content="저장+계속"
+                            Style="{StaticResource DlgFooterSecondaryBtn}"
+                            Click="SaveAndContinueButton_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

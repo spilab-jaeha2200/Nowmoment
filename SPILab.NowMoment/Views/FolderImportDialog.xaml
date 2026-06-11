@@ -1,0 +1,438 @@
+<!-- ════════════════════════════════════════════════════════════
+     FolderImportDialog.xaml — v3.0 F-002 폴더 임포트 (Step 2.3)
+
+     단일 창 안에서 Phase 에 따라 동적으로 4가지 영역 전환:
+       1) SelectFolder — 루트 폴더 + 프로젝트 선택
+       2) Scanning     — 진행률 표시 + [취소]
+       3) Preview      — 미리보기 그리드 + 체크박스 + [확정]
+       4) Done         — 결과 요약 + [닫기] 또는 [다른 폴더 임포트]
+     ════════════════════════════════════════════════════════════ -->
+<Window x:Class="SPILab.NowMoment.Views.FolderImportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding DialogTitle}" Height="720" Width="1100"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
+        Background="#1A2332">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <Style x:Key="DlgLabel" TargetType="Label">
+            <Setter Property="Foreground" Value="#9DB4CC"/>
+            <Setter Property="FontFamily" Value="맑은 고딕"/>
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="DlgTextBox" TargetType="TextBox">
+            <Setter Property="Background"  Value="#243447"/>
+            <Setter Property="Foreground"  Value="#F0F4F8"/>
+            <Setter Property="BorderBrush" Value="#2E75B6"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"     Value="8,6"/>
+            <Setter Property="FontFamily"  Value="맑은 고딕"/>
+            <Setter Property="FontSize"    Value="13"/>
+            <Setter Property="CaretBrush"  Value="White"/>
+        </Style>
+        <!-- ─────────────────────────────────────────────
+             ComboBox ControlTemplate 재정의 (다크 테마)
+             WPF ComboBox 는 단순 Background 설정으로 다크 테마가
+             안 되므로 ControlTemplate 자체를 재정의해야 함.
+             ───────────────────────────────────────────── -->
+        <Style x:Key="DlgComboToggle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="ClickMode" Value="Press"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="#243447"
+                                BorderBrush="#2E75B6" BorderThickness="1"
+                                CornerRadius="2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="20"/>
+                                </Grid.ColumnDefinitions>
+                                <Path Grid.Column="1"
+                                      Data="M 0 0 L 4 4 L 8 0 Z"
+                                      Fill="#9DB4CC"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="#7DD8E8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DlgComboItem" TargetType="ComboBoxItem">
+            <Setter Property="Background"  Value="#243447"/>
+            <Setter Property="Foreground"  Value="#F0F4F8"/>
+            <Setter Property="Padding"     Value="8,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2E75B6"/>
+                            </Trigger>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2E75B6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DlgCombo" TargetType="ComboBox">
+            <Setter Property="Background"  Value="#243447"/>
+            <Setter Property="Foreground"  Value="#F0F4F8"/>
+            <Setter Property="BorderBrush" Value="#2E75B6"/>
+            <Setter Property="FontFamily"  Value="맑은 고딕"/>
+            <Setter Property="FontSize"    Value="13"/>
+            <Setter Property="Padding"     Value="6,4"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource DlgComboItem}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton"
+                                          Style="{StaticResource DlgComboToggle}"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                                              RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <ContentPresenter
+                                Content="{TemplateBinding SelectionBoxItem}"
+                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                IsHitTestVisible="False"
+                                Margin="8,4,24,4"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Left"
+                                TextElement.Foreground="#F0F4F8"/>
+                            <Popup x:Name="Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Grid MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                      MinWidth="{TemplateBinding ActualWidth}">
+                                    <Border Background="#243447"
+                                            BorderBrush="#2E75B6" BorderThickness="1"
+                                            CornerRadius="2">
+                                        <ScrollViewer SnapsToDevicePixels="True">
+                                            <ItemsPresenter
+                                                KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#5A7A9A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PrimaryBtn" TargetType="Button">
+            <Setter Property="Background" Value="#2E75B6"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="맑은 고딕"/>
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="Padding"    Value="14,8"/>
+            <Setter Property="Cursor"     Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#2A4A7F"/>
+                    <Setter Property="Foreground" Value="#9DB4CC"/>
+                    <Setter Property="Cursor"     Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="GhostBtn" TargetType="Button" BasedOn="{StaticResource PrimaryBtn}">
+            <Setter Property="Background" Value="#2A4A7F"/>
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background"  Value="#243447"/>
+            <Setter Property="Foreground"  Value="#7DD8E8"/>
+            <Setter Property="FontFamily"  Value="맑은 고딕"/>
+            <Setter Property="FontSize"    Value="11"/>
+            <Setter Property="FontWeight"  Value="SemiBold"/>
+            <Setter Property="Padding"     Value="8,6"/>
+            <Setter Property="BorderBrush" Value="#1A2B3C"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        </Style>
+        <Style TargetType="DataGridCell">
+            <Setter Property="Background"  Value="Transparent"/>
+            <Setter Property="Foreground"  Value="#F0F4F8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"     Value="6,3"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#2E75B6"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 신뢰도별 행 색상 -->
+        <Style x:Key="RowByConfidence" TargetType="DataGridRow">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ConfidenceTag}" Value="high">
+                    <Setter Property="Background" Value="#1A2B3C"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ConfidenceTag}" Value="medium">
+                    <Setter Property="Background" Value="#2C2A1F"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ConfidenceTag}" Value="low">
+                    <Setter Property="Background" Value="#332024"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- 헤더 -->
+            <RowDefinition Height="Auto"/>   <!-- 단계 표시 + 상태 메시지 -->
+            <RowDefinition Height="*"/>      <!-- 본문 (Phase별 전환) -->
+            <RowDefinition Height="Auto"/>   <!-- 하단 버튼 -->
+        </Grid.RowDefinitions>
+
+        <!-- ── 헤더 ── -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+            <TextBlock Text="{Binding DialogTitle}"
+                       Foreground="#7DD8E8" FontFamily="맑은 고딕" FontSize="20"
+                       FontWeight="SemiBold"/>
+        </StackPanel>
+
+        <!-- ── 상태 메시지 ── -->
+        <Border Grid.Row="1" Background="#243447" CornerRadius="4" Padding="12,8" Margin="0,0,0,12">
+            <TextBlock Text="{Binding StatusMessage}"
+                       Foreground="#F0F4F8" FontFamily="맑은 고딕" FontSize="12"
+                       TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- ── 본문: Phase 별 동적 전환 ── -->
+        <Grid Grid.Row="2">
+
+            <!-- Phase 1: 폴더 선택 -->
+            <StackPanel Visibility="{Binding IsSelectFolder, Converter={StaticResource BoolToVis}}">
+                <Label Style="{StaticResource DlgLabel}" Content="루트 폴더"/>
+                <Grid Margin="0,4,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Style="{StaticResource DlgTextBox}"
+                             Text="{Binding RootPath, UpdateSourceTrigger=PropertyChanged}"/>
+                    <Button Grid.Column="1" Content="📂  찾기..." Margin="8,0,0,0"
+                            Style="{StaticResource GhostBtn}"
+                            Command="{Binding BrowseRootCommand}"/>
+                </Grid>
+
+                <Label Style="{StaticResource DlgLabel}" Content="기본 프로젝트 (임포트되는 자산이 묶일 프로젝트, 선택)"/>
+                <ComboBox Style="{StaticResource DlgCombo}" Margin="0,4,0,16"
+                          ItemsSource="{Binding Projects}"
+                          SelectedItem="{Binding SelectedProject}"
+                          DisplayMemberPath="Name"/>
+
+                <Border Background="#1F2A3A" CornerRadius="4" Padding="14"
+                        BorderBrush="#3A5A7A" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="🔍 자동 분류 규칙"
+                                   Foreground="#7DD8E8" FontFamily="맑은 고딕" FontSize="13"
+                                   FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock Foreground="#9DB4CC" FontFamily="맑은 고딕" FontSize="12"
+                                   TextWrapping="Wrap" LineHeight="20">
+                            <Run Text="📦 소스코드" FontWeight="SemiBold" Foreground="#7DD8E8"/><LineBreak/>
+                            <Run Text="• "/><Run Text=".git/" FontWeight="SemiBold" Foreground="#FFB300"/><Run Text=" + README → "/><Run Text="git 저장소"/><Run Text=" (90~95%)"/><LineBreak/>
+                            <Run Text="• "/><Run Text="*.sln / *.csproj" FontWeight="SemiBold" Foreground="#FFB300"/><Run Text=" → "/><Run Text="C# 프로젝트"/><Run Text=" (85~92%)"/><LineBreak/>
+                            <Run Text="• "/><Run Text="pyproject.toml / setup.py" FontWeight="SemiBold" Foreground="#FFB300"/><Run Text=" → "/><Run Text="Python 패키지"/><Run Text=" (82~90%)"/><LineBreak/>
+                            <Run Text="• "/><Run Text="Pipfile / requirements.txt" FontWeight="SemiBold" Foreground="#FFB300"/><Run Text=" → "/><Run Text="Python (약한 신호)"/><Run Text=" (60~80%)"/><LineBreak/>
+                            <LineBreak/>
+                            <Run Text="🤖 AI 모델" FontWeight="SemiBold" Foreground="#7DD8E8"/><LineBreak/>
+                            <Run Text="• "/><Run Text="*.pt / *.onnx / *.pkl / *.h5 / *.safetensors" FontWeight="SemiBold" Foreground="#FFB300"/><Run Text=" → "/><Run Text="AI 모델"/><Run Text=" (85%)"/><LineBreak/>
+                            <LineBreak/>
+                            <Run Text="📄 문서" FontWeight="SemiBold" Foreground="#7DD8E8"/><LineBreak/>
+                            <Run Text="• "/><Run Text="*.pdf / *.docx" FontWeight="SemiBold" Foreground="#FFB300"/><Run Text=" + papers/ 경로 → "/><Run Text="문서 (paper)"/><Run Text=" (85%)"/><LineBreak/>
+                            <Run Text="• "/><Run Text="기타 *.pdf / *.docx / *.pptx / *.xlsx" FontWeight="SemiBold" Foreground="#9DB4CC"/><Run Text=" → "/><Run Text="문서 (일반)"/><Run Text=" (60%)"/><LineBreak/>
+                            <LineBreak/>
+                            <Run Text="🔬 실험" FontWeight="SemiBold" Foreground="#7DD8E8"/><LineBreak/>
+                            <Run Text="• "/><Run Text="metrics.json + params.json" FontWeight="SemiBold" Foreground="#FFB300"/><Run Text=" → "/><Run Text="실험"/><Run Text=" (75%)"/><LineBreak/>
+                            <LineBreak/>
+                            <Run Text="ℹ 같은 폴더에 여러 마커가 있으면 위쪽 우선. 코드 마커가 잡힌 폴더 안의 *.pdf/.pt 등은 별도 자산으로 분리하지 않고 하나의 코드 자산에 흡수됩니다." Foreground="#7E94AC" FontStyle="Italic"/>
+                        </TextBlock>
+                        <TextBlock Margin="0,12,0,0"
+                                   Foreground="#F590A8" FontFamily="맑은 고딕" FontSize="11"
+                                   TextWrapping="Wrap">
+                            ⚠ 임포트는 자동 롤백되지 않습니다. 시작 전에 [💾 DB 백업] 으로 백업해 두는 것을 권장합니다.
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Phase 2: 스캔 진행 -->
+            <StackPanel Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}"
+                        VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="🔍 폴더 스캔 중..."
+                           Foreground="#7DD8E8" FontFamily="맑은 고딕" FontSize="20"
+                           FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                <TextBlock HorizontalAlignment="Center"
+                           Foreground="#F0F4F8" FontFamily="맑은 고딕" FontSize="14">
+                    <Run Text="처리한 항목: "/>
+                    <Run Text="{Binding ScannedCount}" FontWeight="SemiBold" Foreground="#FFB300"/>
+                </TextBlock>
+                <ProgressBar IsIndeterminate="True" Height="6" Width="380" Margin="0,20,0,0"
+                             Foreground="#2E75B6" Background="#243447" BorderThickness="0"/>
+            </StackPanel>
+
+            <!-- Phase 3: 미리보기 그리드 -->
+            <Grid Visibility="{Binding IsPreview, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- 일괄 선택 도구 -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="✓ 모두 선택"  Style="{StaticResource GhostBtn}"
+                            Command="{Binding SelectAllCommand}" Margin="0,0,8,0"/>
+                    <Button Content="✗ 모두 해제"  Style="{StaticResource GhostBtn}"
+                            Command="{Binding SelectNoneCommand}" Margin="0,0,8,0"/>
+                    <TextBlock VerticalAlignment="Center" Margin="12,0,0,0"
+                               Foreground="#9DB4CC" FontFamily="맑은 고딕" FontSize="11">
+                        <Run Text="배경 색상: "/>
+                        <Run Text="높음" Foreground="#7DD8A8"/><Run Text=" / "/>
+                        <Run Text="중간" Foreground="#FFB300"/><Run Text=" / "/>
+                        <Run Text="낮음" Foreground="#F590A8"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- 미리보기 그리드 -->
+                <DataGrid x:Name="CandidatesGrid"
+                          Grid.Row="1" ItemsSource="{Binding Candidates}"
+                          AutoGenerateColumns="False" CanUserAddRows="False"
+                          HeadersVisibility="Column"
+                          Background="#1A2B3C" BorderThickness="1" BorderBrush="#2E75B6"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#2A4A7F"
+                          RowStyle="{StaticResource RowByConfidence}"
+                          FontFamily="맑은 고딕" FontSize="12">
+                    <DataGrid.Columns>
+                        <!-- v3.0 hotfix: DataGridCheckBoxColumn 은 외부에서 IsSelected 를
+                             setter 로 변경해도 셀이 비활성 상태이면 화면 갱신이 누락되는
+                             WPF 알려진 이슈가 있음. DataGridTemplateColumn + 직접 CheckBox
+                             로 대체하면 INotifyPropertyChanged 가 즉시 반영됨. -->
+                        <DataGridTemplateColumn Header="선택" Width="40">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="유형" Width="70"
+                            Binding="{Binding KindLabel}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="신뢰도" Width="60"
+                            Binding="{Binding ConfidenceLabel}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="자산명/제목" Width="200"
+                            Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}"/>
+                        <DataGridTextColumn Header="경로" Width="*"
+                            Binding="{Binding ShortPath}" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="분류 근거" Width="200"
+                            Binding="{Binding Reason}" IsReadOnly="True"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <!-- Phase 4 (Committing/Done): 결과 요약 -->
+            <Grid Visibility="{Binding IsCommitting, Converter={StaticResource BoolToVis}}">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="💾 DB 에 추가 중..."
+                               Foreground="#7DD8E8" FontFamily="맑은 고딕" FontSize="20"
+                               FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                    <ProgressBar IsIndeterminate="True" Height="6" Width="380"
+                                 Foreground="#2E75B6" Background="#243447" BorderThickness="0"/>
+                </StackPanel>
+            </Grid>
+
+            <ScrollViewer Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}"
+                          VerticalScrollBarVisibility="Auto">
+                <Border Background="#243447" CornerRadius="4" Padding="14">
+                    <TextBlock Text="{Binding CommitSummary}"
+                               Foreground="#F0F4F8" FontFamily="Consolas" FontSize="12"
+                               TextWrapping="Wrap"/>
+                </Border>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- ── 하단 버튼 ── -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,16,0,0">
+            <!-- Phase 1 -->
+            <Button Content="🔍 스캔 시작"
+                    Style="{StaticResource PrimaryBtn}"
+                    Command="{Binding ScanCommand}"
+                    Visibility="{Binding IsSelectFolder, Converter={StaticResource BoolToVis}}"/>
+
+            <!-- Phase 2 -->
+            <Button Content="✗ 취소"
+                    Style="{StaticResource GhostBtn}"
+                    Command="{Binding CancelScanCommand}"
+                    Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}"/>
+
+            <!-- Phase 3 -->
+            <Button Content="◀ 다른 폴더"
+                    Style="{StaticResource GhostBtn}" Margin="0,0,8,0"
+                    Command="{Binding BackToSelectCommand}"
+                    Visibility="{Binding IsPreview, Converter={StaticResource BoolToVis}}"/>
+            <Button Content="✓ 확정 (DB 추가)"
+                    Style="{StaticResource PrimaryBtn}"
+                    Command="{Binding CommitCommand}"
+                    Visibility="{Binding IsPreview, Converter={StaticResource BoolToVis}}"/>
+
+            <!-- Phase 5 (Done) -->
+            <!-- v3.0 사용자 요청: [다른 폴더 임포트] 버튼은 사용 안 함 — 항상 숨김.
+                 완료 후에는 [닫기]로 다이얼로그 닫고 필요 시 자산 탭에서 다시 [📁 폴더 임포트]를 눌러 새 다이얼로그를 시작. -->
+            <Button Content="◀ 다른 폴더 임포트"
+                    Style="{StaticResource GhostBtn}" Margin="0,0,8,0"
+                    Command="{Binding BackToSelectCommand}"
+                    Visibility="Collapsed"/>
+            <Button Content="닫기" Width="100" IsCancel="True"
+                    Style="{StaticResource GhostBtn}"
+                    Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}"/>
+
+            <!-- 항상 표시되는 닫기 (Phase 1, 3 에서) -->
+            <Button Content="닫기" Width="100" Margin="8,0,0,0" IsCancel="True">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource GhostBtn}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsSelectFolder}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsPreview}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

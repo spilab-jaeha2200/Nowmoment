@@ -1,0 +1,343 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/Themes/AssetCommonStyles.xaml
+     자산 관리 화면들이 공유하는 Style 6개를 정의한다.
+
+     이 사전은 App.xaml 의 MergedDictionaries 에 포함되어 모든 화면이
+     StaticResource 로 다음 키들을 참조할 수 있게 한다:
+
+       PrimaryButton, SecondaryButton, SearchTextBox,
+       FilterCombo, V4DataGrid, DetailCard, KgLinkText
+
+     색상은 모두 DynamicResource Theme.* 로 바인딩되어
+     ThemeManager 가 갱신할 때 자동 전환된다.
+     ════════════════════════════════════════════════════════════════════ -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ── 공통 Style 6개 + DataGrid 헤더 ─────────────────────────── -->
+
+    <!-- 주 액션 버튼 ([＋ 등록]) -->
+    <Style x:Key="PrimaryButton" TargetType="Button">
+        <Setter Property="Background"     Value="{DynamicResource Theme.Accent}"/>
+        <Setter Property="Foreground"     Value="{DynamicResource Theme.FgOnAccent}"/>
+        <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Accent}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding"        Value="14,6"/>
+        <Setter Property="FontSize"       Value="12"/>
+        <Setter Property="Cursor"         Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Theme.AccentDark}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Theme.BgDisabled}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Theme.Border}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource Theme.FgMuted}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 보조 버튼 ([✎ 수정] [✗ 삭제] [새로고침] 등) -->
+    <Style x:Key="SecondaryButton" TargetType="Button">
+        <Setter Property="Background"     Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"     Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding"        Value="12,6"/>
+        <Setter Property="FontSize"       Value="12"/>
+        <Setter Property="Cursor"         Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Theme.BgHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource Theme.FgMuted}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 검색 텍스트박스 -->
+    <Style x:Key="SearchTextBox" TargetType="TextBox">
+        <Setter Property="Background"     Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"     Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding"        Value="10,6"/>
+        <Setter Property="FontSize"       Value="12"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <!-- 필터 콤보 (프로젝트/태그/상태/연도 등) -->
+    <!-- 필터 콤보 드롭다운 항목 — 다크/라이트 양쪽 가독성 확보 -->
+    <Style x:Key="FilterComboItem" TargetType="ComboBoxItem">
+        <Setter Property="Background"  Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"  Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="FontSize"    Value="12"/>
+        <Setter Property="Padding"     Value="10,6"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter TextElement.Foreground="{DynamicResource Theme.FgPrimary}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgSelected}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="FilterCombo" TargetType="ComboBox">
+        <Setter Property="Background"     Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"     Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding"        Value="10,4"/>
+        <Setter Property="FontSize"       Value="12"/>
+        <Setter Property="MinWidth"       Value="140"/>
+        <Setter Property="MinHeight"      Value="30"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource FilterComboItem}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                                  RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="Bd"
+                                            Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderThickness="1" CornerRadius="3">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="22"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Path Grid.Column="1"
+                                                  Data="M 0 0 L 4 4 L 8 0 Z"
+                                                  Fill="{DynamicResource Theme.FgSecondary}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush"
+                                                    Value="{DynamicResource Theme.Cyan}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <ContentPresenter Margin="10,0,26,0"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          VerticalAlignment="Center" HorizontalAlignment="Left"
+                                          TextElement.Foreground="{DynamicResource Theme.FgPrimary}"
+                                          TextElement.FontSize="12"
+                                          IsHitTestVisible="False"/>
+                        <Popup Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                               AllowsTransparency="True" PopupAnimation="Slide" Focusable="False">
+                            <Border Background="{DynamicResource Theme.BgCard}"
+                                    BorderBrush="{DynamicResource Theme.Border}"
+                                    BorderThickness="1" CornerRadius="3"
+                                    MinWidth="{TemplateBinding ActualWidth}" MaxHeight="320">
+                                <ScrollViewer SnapsToDevicePixels="True">
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- v4 DataGrid 표준 스타일 -->
+    <Style x:Key="V4DataGrid" TargetType="DataGrid">
+        <Setter Property="Background"           Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"           Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderBrush"          Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness"      Value="0"/>
+        <Setter Property="GridLinesVisibility"  Value="Horizontal"/>
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="AutoGenerateColumns"  Value="False"/>
+        <Setter Property="HeadersVisibility"    Value="Column"/>
+        <Setter Property="CanUserAddRows"       Value="False"/>
+        <Setter Property="CanUserDeleteRows"    Value="False"/>
+        <!-- 셀 더블클릭/F2 등으로 인한 인라인 편집을 전면 차단.
+             읽기 전용 속성(SelectableCode.Name 등)에 TwoWay 바인딩이 시도되어
+             InvalidOperationException 이 발생하던 문제를 방지한다.
+             데이터 수정은 [수정] 버튼 → 편집 다이얼로그 경로로만 이루어진다. -->
+        <Setter Property="IsReadOnly"           Value="True"/>
+        <Setter Property="SelectionMode"        Value="Single"/>
+        <Setter Property="SelectionUnit"        Value="FullRow"/>
+        <Setter Property="RowBackground"        Value="{DynamicResource Theme.BgGridRowEven}"/>
+        <Setter Property="AlternatingRowBackground" Value="{DynamicResource Theme.BgGridRowOdd}"/>
+        <Setter Property="ColumnHeaderHeight"   Value="36"/>
+        <Setter Property="RowHeight"            Value="32"/>
+        <Setter Property="FontSize"             Value="12"/>
+        <!-- 헤더 스타일을 인라인으로 묶어둠 — V4DataGrid 가 적용된 DataGrid 만 자동으로 받음.
+             외부 x:Key 참조를 피해서 리소스 해석 순서 의존성 제거. -->
+        <Setter Property="ColumnHeaderStyle">
+            <Setter.Value>
+                <Style TargetType="DataGridColumnHeader">
+                    <!-- 헤더: 흰 배경 + 어두운 글자 (업로드 디자인 기준).
+                         BgCard/FgPrimary 토큰을 사용하므로 다크 모드에서도
+                         어두운 카드색 배경 + 밝은 글자로 자동 전환된다. -->
+                    <Setter Property="Background"     Value="{DynamicResource Theme.BgCard}"/>
+                    <Setter Property="Foreground"     Value="{DynamicResource Theme.FgPrimary}"/>
+                    <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Border}"/>
+                    <Setter Property="BorderThickness" Value="0,0,1,2"/>
+                    <Setter Property="Padding"        Value="10,6"/>
+                    <Setter Property="FontWeight"     Value="Bold"/>
+                    <Setter Property="FontSize"       Value="12"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                    <Setter Property="VerticalContentAlignment"   Value="Center"/>
+                    <Setter Property="MinHeight"      Value="36"/>
+                    <!-- ControlTemplate 을 명시하지 않으면 일부 WPF 테마에서
+                         DataGridColumnHeader 의 Background Setter 가 무시되어
+                         헤더가 투명/흰색으로 보이지 않는 문제가 있다.
+                         아래 템플릿으로 Background 적용을 강제한다. -->
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="DataGridColumnHeader">
+                                <Grid>
+                                    <Border Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}">
+                                        <ContentPresenter
+                                            Margin="{TemplateBinding Padding}"
+                                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Border>
+                                    <Thumb x:Name="PART_RightHeaderGripper"
+                                           HorizontalAlignment="Right"
+                                           Width="6" Cursor="SizeWE"
+                                           Opacity="0">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Grid>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 상세 패널 카드 -->
+    <Style x:Key="DetailCard" TargetType="Border">
+        <Setter Property="Background"      Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius"    Value="6"/>
+        <Setter Property="Padding"         Value="16,12"/>
+    </Style>
+
+    <!-- KG 노드 링크 텍스트 -->
+    <Style x:Key="KgLinkText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Theme.Cyan}"/>
+        <Setter Property="FontSize"   Value="12"/>
+        <Setter Property="Margin"     Value="0,0,12,0"/>
+        <Setter Property="Cursor"     Value="Hand"/>
+    </Style>
+
+    <!-- DataGrid 컬럼 헤더 스타일은 위 V4DataGrid 의 ColumnHeaderStyle Setter 로 인라인 정의됨.
+         전역 자동 적용 스타일(x:Key 없는 형태)은 v3 다이얼로그·기타 DataGrid 에 부작용을 주므로
+         사용하지 않는다. 별도 참조가 필요하면 위 인라인을 동일하게 복사해 다른 키로 정의할 것. -->
+
+    <!-- ════════ 그리드용 체크박스 — 라이트/다크 양쪽 명확히 보이는 커스텀 ════════ -->
+    <Style x:Key="GridCheckBox" TargetType="CheckBox">
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment"   Value="Center"/>
+        <Setter Property="Cursor"              Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid Background="Transparent">
+                        <Border x:Name="Box"
+                                Width="16" Height="16"
+                                CornerRadius="3"
+                                Background="{DynamicResource Theme.BgCard}"
+                                BorderBrush="{DynamicResource Theme.FgSecondary}"
+                                BorderThickness="1.5">
+                            <Path x:Name="Check"
+                                  Data="M 2.5 6 L 6 9.5 L 12 2.5"
+                                  Stroke="{DynamicResource Theme.FgOnAccent}"
+                                  StrokeThickness="2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Stretch="Uniform" Margin="2.5"
+                                  Visibility="Collapsed"/>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Box" Property="Background"
+                                    Value="{DynamicResource Theme.Accent}"/>
+                            <Setter TargetName="Box" Property="BorderBrush"
+                                    Value="{DynamicResource Theme.Accent}"/>
+                            <Setter TargetName="Check" Property="Visibility"
+                                    Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="BorderBrush"
+                                    Value="{DynamicResource Theme.Accent}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

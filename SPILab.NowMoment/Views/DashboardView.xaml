@@ -1,0 +1,246 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/DashboardView.xaml — v4 홈 대시보드
+
+     구성: ① 상단 통계 카드 4종 (좌측 컬러 띠 + 라벨/값/델타)
+           ② 좌측 도넛 차트 (자산 유형별 분포)
+           ③ 우측 최근 활동 리스트
+
+     라이트/다크 자동 대응: 모든 색상은 Theme.* 토큰.
+     카드 좌측 컬러 띠는 카테고리 식별용 고정 강조색 (양쪽 테마 공통).
+     ════════════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FontFamily="Malgun Gothic"
+             Background="{DynamicResource Theme.BgMain}">
+    <UserControl.Resources>
+
+        <!-- 통계 카드 본체 (좌측 컬러 띠 + 내용을 담는 컨테이너) -->
+        <Style x:Key="DashCardStyle" TargetType="Border">
+            <Setter Property="Background"      Value="{DynamicResource Theme.BgCard}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="6"/>
+        </Style>
+
+        <Style x:Key="StatLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="13"/>
+            <Setter Property="Foreground" Value="{DynamicResource Theme.FgSecondary}"/>
+            <Setter Property="Margin"     Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="StatValueStyle" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="36"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Theme.FgPrimary}"/>
+        </Style>
+
+        <Style x:Key="StatDeltaStyle" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource Theme.FgMuted}"/>
+            <Setter Property="Margin"     Value="0,8,0,0"/>
+        </Style>
+
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Theme.FgPrimary}"/>
+            <Setter Property="Margin"     Value="0,0,0,14"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ════════════════════════════════════════════════════════════
+             ① 상단 4개 통계 카드 — 좌측 컬러 띠는 Border 클리핑으로 깔끔하게
+             ════════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 카드 1: 기술자산 -->
+            <Border Grid.Column="0" Style="{StaticResource DashCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- 좌측 컬러 띠 (카드 왼쪽 모서리만 라운드) -->
+                    <Border Grid.Column="0" Background="#1F3864"
+                            CornerRadius="6,0,0,6"/>
+                    <StackPanel Grid.Column="1" Margin="18,18,20,18">
+                        <TextBlock Text="기술자산" Style="{StaticResource StatLabelStyle}"/>
+                        <TextBlock Text="{Binding AssetTotal}" Style="{StaticResource StatValueStyle}"/>
+                        <TextBlock Text="{Binding AssetDelta}" Style="{StaticResource StatDeltaStyle}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 카드 2: KG 노드 -->
+            <Border Grid.Column="2" Style="{StaticResource DashCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="#3D7BCE"
+                            CornerRadius="6,0,0,6"/>
+                    <StackPanel Grid.Column="1" Margin="18,18,20,18">
+                        <TextBlock Text="KG 노드" Style="{StaticResource StatLabelStyle}"/>
+                        <TextBlock Text="{Binding KgNodes}" Style="{StaticResource StatValueStyle}"/>
+                        <TextBlock Text="{Binding KgDomainText}" Style="{StaticResource StatDeltaStyle}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 카드 3: 프로젝트 -->
+            <Border Grid.Column="4" Style="{StaticResource DashCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="#3DA48B"
+                            CornerRadius="6,0,0,6"/>
+                    <StackPanel Grid.Column="1" Margin="18,18,20,18">
+                        <TextBlock Text="프로젝트" Style="{StaticResource StatLabelStyle}"/>
+                        <TextBlock Text="{Binding ProjectsTotal}" Style="{StaticResource StatValueStyle}"/>
+                        <TextBlock Text="{Binding ProjectsActiveText}" Style="{StaticResource StatDeltaStyle}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 카드 4: 백업 -->
+            <Border Grid.Column="6" Style="{StaticResource DashCardStyle}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="#E8A838"
+                            CornerRadius="6,0,0,6"/>
+                    <StackPanel Grid.Column="1" Margin="18,18,20,18">
+                        <TextBlock Text="백업" Style="{StaticResource StatLabelStyle}"/>
+                        <TextBlock Text="{Binding BackupAgo}" Style="{StaticResource StatValueStyle}"/>
+                        <TextBlock Text="{Binding BackupNext}" Style="{StaticResource StatDeltaStyle}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ════════════════════════════════════════════════════════════
+             ② 좌측 도넛 차트  /  ③ 우측 최근 활동
+             ════════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ② 자산 유형별 분포 -->
+            <Border Grid.Column="0" Style="{StaticResource DashCardStyle}" Padding="20,18">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="📊  자산 유형별 분포"
+                               Style="{StaticResource SectionTitleStyle}"/>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 도넛 차트 호스트 — code-behind 가 Path 들을 채움 -->
+                        <Canvas x:Name="DonutCanvas" Grid.Column="0"
+                                Width="280" Height="280"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                        <!-- 범례 -->
+                        <ItemsControl Grid.Column="1"
+                                      ItemsSource="{Binding AssetSlices}"
+                                      VerticalAlignment="Center"
+                                      Margin="20,0,8,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,6">
+                                        <Rectangle Width="14" Height="14" Fill="{Binding Color}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Label}"
+                                                   Margin="8,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="13"
+                                                   Foreground="{DynamicResource Theme.FgPrimary}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- ③ 최근 활동 -->
+            <Border Grid.Column="2" Style="{StaticResource DashCardStyle}" Padding="20,18">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="🕒  최근 활동"
+                               Style="{StaticResource SectionTitleStyle}"/>
+
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding RecentItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="0,9" BorderThickness="0,0,0,1"
+                                        BorderBrush="{DynamicResource Theme.Border}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition Width="32"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding TimeLabel}"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource Theme.FgMuted}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Glyph}"
+                                                   FontSize="14" FontWeight="Bold"
+                                                   Foreground="{Binding GlyphColor}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Description}"
+                                                   FontSize="13"
+                                                   Foreground="{DynamicResource Theme.FgPrimary}"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding Actor}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource Theme.FgMuted}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="12,0,0,0"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

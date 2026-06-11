@@ -1,0 +1,191 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/AssetKgLinkViewerView.xaml — 자산↔KG 링크 종합 화면 (SCR-B05)
+
+     구조:
+       Col 0 (320px): 자산 선택 패널
+         - 자산 유형 선택 (콤보)
+         - 자산 목록 (ListBox)
+       Col 1 (*): 선택된 자산의 v3 AssetKgLinkPanelView 임베드
+                  (선택 없으면 안내 메시지)
+     ════════════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.AssetKgLinkViewerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:SPILab.NowMoment.Views"
+             Background="{DynamicResource Theme.BgMain}"
+             FontFamily="맑은 고딕">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320"/>
+            <ColumnDefinition Width="14"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ════════ Col 0: 자산 선택 패널 ════════ -->
+        <Border Grid.Column="0" Style="{StaticResource DetailCard}" Padding="14,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="🔗 자산 ↔ KG 링크"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource Theme.Accent}"
+                           Margin="0,0,0,4"/>
+                <TextBlock Grid.Row="1"
+                           Text="자산 5종과 KG 노드 간 implements / uses / cites 등 관계를 등록합니다."
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12"/>
+
+                <TextBlock Grid.Row="2"
+                           Text="자산 유형"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           FontSize="12" FontWeight="Bold"
+                           Margin="0,0,0,4"/>
+                <ComboBox Grid.Row="3"
+                          Style="{StaticResource FilterCombo}"
+                          ItemsSource="{Binding AssetTypes}"
+                          SelectedItem="{Binding SelectedAssetType, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch"
+                          Margin="0,0,0,10"/>
+
+                <!-- 자산 목록 -->
+                <Border Grid.Row="4"
+                        BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                        CornerRadius="4"
+                        Background="{DynamicResource Theme.BgCard}">
+                    <ListBox ItemsSource="{Binding AssetRows}"
+                             SelectedItem="{Binding SelectedAsset, Mode=TwoWay}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Foreground="{DynamicResource Theme.FgPrimary}"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="10,6"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource Theme.BgSelected}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource Theme.FgPrimary}"/>
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource Theme.BgHover}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Icon}"
+                                               FontSize="14" VerticalAlignment="Center"
+                                               Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Display}"
+                                               FontFamily="Consolas" FontSize="12"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+
+                <TextBlock Grid.Row="5"
+                           Text="{Binding AssetCountLabel}"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           FontSize="11"
+                           Margin="4,6,0,0"
+                           HorizontalAlignment="Right"/>
+            </Grid>
+        </Border>
+
+        <!-- ════════ Col 2: v3 AssetKgLinkPanelView 임베드 또는 안내 ════════ -->
+        <Border Grid.Column="2" Style="{StaticResource DetailCard}" Padding="14,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- 헤더 -->
+                <Border Grid.Row="0"
+                        BorderBrush="{DynamicResource Theme.Accent}" BorderThickness="3,0,0,0"
+                        Padding="10,4,0,4" Margin="0,0,0,12">
+                    <TextBlock Text="{Binding SelectionHeader}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.FgPrimary}"/>
+                </Border>
+
+                <!-- 본문: 선택 시 v3 패널, 미선택 시 안내 -->
+                <Grid Grid.Row="1">
+                    <!-- 안내 (선택 없을 때) -->
+                    <Border Background="{DynamicResource Theme.BgGridRowOdd}"
+                            BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="32,24"
+                            VerticalAlignment="Top"
+                            HorizontalAlignment="Stretch">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasSelection}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="←  좌측에서 자산을 선택하세요"
+                                       Foreground="{DynamicResource Theme.FgMuted}"
+                                       FontSize="14"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="자산을 선택하면 해당 자산과 연결된 KG 노드 목록 및 신규 링크 추가/삭제 패널이 표시됩니다."
+                                       Foreground="{DynamicResource Theme.FgMuted}"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       MaxWidth="500"
+                                       Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- v3 AssetKgLinkPanelView 임베드 (선택 있을 때) -->
+                    <!-- DataContext 는 LinkPanelVm 이지만, 표시 여부 트리거는
+                         부모 ViewModel(AssetKgLinkViewerViewModel)의 HasSelection 을
+                         RelativeSource 로 참조해야 한다. (LinkPanelVm 에는
+                         HasSelection 속성이 없어 평범한 {Binding} 은 발동하지 않음) -->
+                    <views:AssetKgLinkPanelView x:Name="EmbeddedPanel"
+                                                DataContext="{Binding LinkPanelVm}">
+                        <views:AssetKgLinkPanelView.Style>
+                            <Style TargetType="views:AssetKgLinkPanelView">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.HasSelection,
+                                                 RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                 Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </views:AssetKgLinkPanelView.Style>
+                    </views:AssetKgLinkPanelView>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

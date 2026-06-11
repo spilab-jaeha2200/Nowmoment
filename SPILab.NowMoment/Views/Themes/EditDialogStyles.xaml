@@ -1,0 +1,509 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/Themes/EditDialogStyles.xaml  (v4 Phase 7 — 라이트/다크 동시 호환)
+
+     자산 편집 다이얼로그 5종(Code/Model/Document/Patent/Experiment)이
+     공유하는 스타일 사전. 모든 색상은 DynamicResource Theme.* 로 바인딩되어
+     ThemeManager.Apply("Light"/"Dark") 호출 시 자동 전환된다.
+
+     v4 Phase 7 변경 (다크 호환):
+       • Theme.BgOnAccentHover  — 헤더 X 닫기 버튼 호버색 (신규 키)
+       • Theme.BgErrorSoft      — KG 행 ✕ 삭제 버튼 호버색 (신규 키)
+       두 키는 App.xaml 기본값 + ThemeManager 라이트/다크 팔레트 모두에 등록.
+
+     키 일람:
+       DlgSectionHeader     : "■ 기본 정보", "📌 KG 노드 연결" 등 섹션 헤더 TextBlock
+       DlgFieldLabel        : 좌측 라벨 (자산명, 프로젝트, ...)
+       DlgInputBox          : TextBox (테마 카드색 배경, 1px 테두리)
+       DlgInputCombo        : ComboBox 본체 + ToggleButton + Item
+       DlgInputDate         : DatePicker
+       DlgInputMultiline    : 설명/요약용 4행 TextBox
+       DlgComboItem         : ComboBoxItem
+       DlgFooterCancelBtn   : 취소 (테두리만)
+       DlgFooterPrimaryBtn  : 저장 (Accent 색 채움)
+       DlgFooterSecondaryBtn: 저장+계속 (Accent 테두리)
+       DlgCloseXBtn         : 헤더 우측 X 아이콘 버튼
+       DlgKgGridHeader      : KG 노드 연결 표 헤더
+       DlgKgGridCell        : KG 노드 연결 표 셀
+       DlgKgSmallBtn        : [+ 추가], [🔍 노드] 등 보조 버튼
+       DlgKgRowDeleteBtn    : KG 행 ✕ 삭제 버튼
+     ════════════════════════════════════════════════════════════════════ -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ── 0. 공통 색상 (App.xaml의 Theme.* 가 라이트이므로 그대로 차용) ─ -->
+    <!-- (DynamicResource 로 가져오면 ThemeManager 가 다크로 바꿔도 자동 추종) -->
+
+    <!-- ── 1. 섹션 헤더 ("■ 기본 정보", "📌 KG 노드 연결 ...") ─────────── -->
+    <Style x:Key="DlgSectionHeader" TargetType="TextBlock">
+        <Setter Property="FontFamily"  Value="맑은 고딕"/>
+        <Setter Property="FontSize"    Value="14"/>
+        <Setter Property="FontWeight"  Value="SemiBold"/>
+        <Setter Property="Foreground"  Value="{DynamicResource Theme.Accent}"/>
+        <Setter Property="Margin"      Value="0,0,0,10"/>
+    </Style>
+
+    <!-- ── 2. 필드 라벨 ─────────────────────────────────────────────── -->
+    <Style x:Key="DlgFieldLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily"  Value="맑은 고딕"/>
+        <Setter Property="FontSize"    Value="13"/>
+        <Setter Property="Foreground"  Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="VerticalAlignment"   Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="Margin"      Value="0,0,12,0"/>
+    </Style>
+
+    <!-- ── 3. 입력 TextBox ──────────────────────────────────────────── -->
+    <Style x:Key="DlgInputBox" TargetType="TextBox">
+        <Setter Property="Background"      Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding"         Value="8,6"/>
+        <Setter Property="FontFamily"      Value="맑은 고딕"/>
+        <Setter Property="FontSize"        Value="13"/>
+        <Setter Property="MinHeight"       Value="32"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="CaretBrush"      Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush"
+                                    Value="{DynamicResource Theme.Accent}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush"
+                                    Value="{DynamicResource Theme.Cyan}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgDisabled}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 4. 멀티라인 (설명/요약 4행) ─────────────────────────────────── -->
+    <!-- 베이스(DlgInputBox) 템플릿은 PART_ContentHost 에 VerticalAlignment=Center 가
+         하드코딩돼 있어 멀티라인에서 텍스트가 세로 가운데로 쏠린다.
+         멀티라인 전용 템플릿으로 ContentHost 가 VerticalContentAlignment(=Top)을
+         따르도록 재정의한다. -->
+    <Style x:Key="DlgInputMultiline" TargetType="TextBox" BasedOn="{StaticResource DlgInputBox}">
+        <Setter Property="AcceptsReturn"   Value="True"/>
+        <Setter Property="TextWrapping"    Value="Wrap"/>
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="MinHeight"       Value="48"/>
+        <Setter Property="VerticalContentAlignment" Value="Top"/>
+        <Setter Property="Padding"         Value="8,6"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalContentAlignment="Top"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush"
+                                    Value="{DynamicResource Theme.Accent}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush"
+                                    Value="{DynamicResource Theme.Cyan}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgDisabled}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 5. ComboBoxItem (드롭다운 항목) ─────────────────────────────── -->
+    <Style x:Key="DlgComboItem" TargetType="ComboBoxItem">
+        <Setter Property="Background"  Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"  Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="FontFamily"  Value="맑은 고딕"/>
+        <Setter Property="FontSize"    Value="13"/>
+        <Setter Property="Padding"     Value="8,6"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgSelected}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 6. ComboBox 본체 ─────────────────────────────────────────── -->
+    <Style x:Key="DlgInputCombo" TargetType="ComboBox">
+        <Setter Property="Background"      Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding"         Value="8,6"/>
+        <Setter Property="FontFamily"      Value="맑은 고딕"/>
+        <Setter Property="FontSize"        Value="13"/>
+        <Setter Property="MinHeight"       Value="32"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource DlgComboItem}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                                  RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="Bd"
+                                            Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                            BorderThickness="1" CornerRadius="3">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="24"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Path Grid.Column="1"
+                                                  Data="M 0 0 L 4 4 L 8 0 Z"
+                                                  Fill="{DynamicResource Theme.FgSecondary}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush"
+                                                    Value="{DynamicResource Theme.Cyan}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <ContentPresenter Margin="8,0,28,0"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          VerticalAlignment="Center" HorizontalAlignment="Left"
+                                          TextElement.Foreground="{DynamicResource Theme.FgPrimary}"
+                                          TextElement.FontFamily="맑은 고딕"
+                                          TextElement.FontSize="13"
+                                          IsHitTestVisible="False"/>
+                        <Popup Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                               AllowsTransparency="True" PopupAnimation="Slide" Focusable="False">
+                            <Border Background="{DynamicResource Theme.BgCard}"
+                                    BorderBrush="{DynamicResource Theme.Border}"
+                                    BorderThickness="1" CornerRadius="3"
+                                    MinWidth="{TemplateBinding ActualWidth}" MaxHeight="300">
+                                <ScrollViewer SnapsToDevicePixels="True">
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 7. DatePicker (라이트) ──────────────────────────────────── -->
+    <Style x:Key="DlgInputDate" TargetType="DatePicker">
+        <Setter Property="Background"      Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontFamily"      Value="맑은 고딕"/>
+        <Setter Property="FontSize"        Value="13"/>
+        <Setter Property="MinHeight"       Value="32"/>
+        <Setter Property="Padding"         Value="4,2"/>
+    </Style>
+
+    <!-- ── 8. 푸터 [취소] (테두리만) ────────────────────────────────── -->
+    <Style x:Key="DlgFooterCancelBtn" TargetType="Button">
+        <Setter Property="Background"      Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontFamily"      Value="맑은 고딕"/>
+        <Setter Property="FontSize"        Value="13"/>
+        <Setter Property="Padding"         Value="18,8"/>
+        <Setter Property="MinWidth"        Value="88"/>
+        <Setter Property="Cursor"          Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgHover}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 9. 푸터 [저장] (네이비 채움) ─────────────────────────────── -->
+    <Style x:Key="DlgFooterPrimaryBtn" TargetType="Button">
+        <Setter Property="Background"      Value="{DynamicResource Theme.Accent}"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Theme.FgOnAccent}"/>
+        <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Accent}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontFamily"      Value="맑은 고딕"/>
+        <Setter Property="FontSize"        Value="13"/>
+        <Setter Property="FontWeight"      Value="SemiBold"/>
+        <Setter Property="Padding"         Value="18,8"/>
+        <Setter Property="MinWidth"        Value="88"/>
+        <Setter Property="Cursor"          Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.AccentDark}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 10. 푸터 [저장+계속] (테두리만, 강조색) ────────────────────── -->
+    <Style x:Key="DlgFooterSecondaryBtn" TargetType="Button" BasedOn="{StaticResource DlgFooterCancelBtn}">
+        <Setter Property="Foreground"  Value="{DynamicResource Theme.Accent}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Theme.Accent}"/>
+        <Setter Property="FontWeight"  Value="SemiBold"/>
+    </Style>
+
+    <!-- ── 11. 헤더 X 닫기 버튼 (네이비 헤더 위, 흰색 X) ────────────────── -->
+    <Style x:Key="DlgCloseXBtn" TargetType="Button">
+        <Setter Property="Background"      Value="Transparent"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Theme.FgOnAccent}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontFamily"      Value="맑은 고딕"/>
+        <Setter Property="FontSize"        Value="16"/>
+        <Setter Property="Width"           Value="32"/>
+        <Setter Property="Height"          Value="32"/>
+        <Setter Property="Cursor"          Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="3">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- v4 Phase 7: 다크 호환 — 흰색 30% 알파 (라이트/다크 모두 자연스러움) -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgOnAccentHover}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 12. KG 노드 연결 표 헤더 ────────────────────────────────── -->
+    <Style x:Key="DlgKgGridHeader" TargetType="DataGridColumnHeader">
+        <Setter Property="Background"      Value="{DynamicResource Theme.BgGridRowOdd}"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="FontFamily"      Value="맑은 고딕"/>
+        <Setter Property="FontSize"        Value="12"/>
+        <Setter Property="FontWeight"      Value="SemiBold"/>
+        <Setter Property="Padding"         Value="10,8"/>
+        <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    </Style>
+
+    <Style x:Key="DlgKgGridCell" TargetType="DataGridCell">
+        <Setter Property="Background"      Value="Transparent"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding"         Value="10,6"/>
+        <Setter Property="FontFamily"      Value="맑은 고딕"/>
+        <Setter Property="FontSize"        Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource Theme.BgSelected}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ── 13. KG 패널 보조 버튼 ([+ 추가], [🔍 노드]) ───────────────── -->
+    <Style x:Key="DlgKgSmallBtn" TargetType="Button">
+        <Setter Property="Background"      Value="{DynamicResource Theme.BgCard}"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Border}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FontFamily"      Value="맑은 고딕"/>
+        <Setter Property="FontSize"        Value="12"/>
+        <Setter Property="Padding"         Value="10,5"/>
+        <Setter Property="MinHeight"       Value="28"/>
+        <Setter Property="Cursor"          Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgDisabled}"/>
+                            <Setter Property="Foreground"
+                                    Value="{DynamicResource Theme.FgMuted}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 14b. RadioButton (라이트/다크 동시 호환) ──────────────────
+         KgDomainEditDialog 의 빌더 종류 선택에 사용. 모든 색상은
+         DynamicResource Theme.* 이므로 테마 전환 시 자동 추종. -->
+    <Style x:Key="DlgRadioButton" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource Theme.FgPrimary}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="FontFamily" Value="맑은 고딕"/>
+        <Setter Property="FontSize"   Value="13"/>
+        <Setter Property="Margin"     Value="0,3,16,3"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Cursor"     Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Grid Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <Ellipse x:Name="Outer" Width="16" Height="16"
+                                     Stroke="{DynamicResource Theme.Border}" StrokeThickness="1.5"
+                                     Fill="{DynamicResource Theme.BgCard}"/>
+                            <Ellipse x:Name="Inner" Width="8" Height="8"
+                                     Fill="{DynamicResource Theme.Accent}"
+                                     Visibility="Collapsed"/>
+                        </Grid>
+                        <ContentPresenter VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"
+                                          TextElement.FontFamily="맑은 고딕"
+                                          TextElement.FontSize="13"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Inner" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="Outer" Property="Stroke"
+                                    Value="{DynamicResource Theme.Accent}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Outer" Property="Stroke"
+                                    Value="{DynamicResource Theme.Cyan}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground"
+                                    Value="{DynamicResource Theme.FgMuted}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 14. KG 행 X 삭제 버튼 ────────────────────────────────── -->
+    <Style x:Key="DlgKgRowDeleteBtn" TargetType="Button">
+        <Setter Property="Background"  Value="Transparent"/>
+        <Setter Property="Foreground"  Value="{DynamicResource Theme.Error}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontFamily" Value="맑은 고딕"/>
+        <Setter Property="FontSize"   Value="14"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Width"      Value="28"/>
+        <Setter Property="Height"     Value="24"/>
+        <Setter Property="Cursor"     Value="Hand"/>
+        <Setter Property="ToolTip"    Value="이 링크를 삭제합니다"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="3">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- v4 Phase 7: 다크 호환 — 라이트(#FDECEC) / 다크(반투명 빨강) -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.BgErrorSoft}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

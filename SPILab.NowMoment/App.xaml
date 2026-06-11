@@ -1,0 +1,67 @@
+<Application x:Class="SPILab.NowMoment.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:SPILab.NowMoment.Converters"
+             StartupUri="Views/MainWindow_v4.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 자산 화면들이 공유하는 Style 6개 (PrimaryButton, SecondaryButton,
+                     SearchTextBox, FilterCombo, V4DataGrid, DetailCard, KgLinkText) +
+                     DataGridColumnHeader 전역 스타일. Theme.* 키 정의보다 뒤에 와도
+                     DynamicResource 로 참조하므로 순서 무관. -->
+                <ResourceDictionary Source="Views/Themes/AssetCommonStyles.xaml"/>
+                <!-- v4 Phase 7: 자산 편집 다이얼로그 5종 공유 스타일 (Dlg* 키 15종).
+                     전역 등록하여 각 다이얼로그가 로컬 상대경로 참조 없이 키를 찾도록 함. -->
+                <ResourceDictionary Source="Views/Themes/EditDialogStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- v3.0 F-001 Step 1.5: 모든 다이얼로그에서 공유하는 컨버터 -->
+            <BooleanToVisibilityConverter x:Key="BoolToVisDlg"/>
+            <conv:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+
+            <!-- v4 Phase 8: 설정창 카테고리 스위칭용 -->
+            <conv:EqualsToVisibilityConverter x:Key="EqualsToVis"/>
+
+            <!-- ════════════════════════════════════════════════════════════
+                 v4 Phase 5: 테마 시스템 — 라이트 톤 기본 팔레트
+                 ThemeManager.Register() 호출 시 동일 키들을 현재 테마 팔레트로
+                 덮어쓴다. 여기서 미리 등록해야 InitializeComponent 단계에서
+                 DynamicResource 가 즉시 해결됨.
+                 ════════════════════════════════════════════════════════════ -->
+
+            <!-- 배경 (라이트) -->
+            <SolidColorBrush x:Key="Theme.BgMain"         Color="#F4F6FB"/>
+            <SolidColorBrush x:Key="Theme.BgCard"         Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="Theme.BgSidebar"      Color="#F9FAFC"/>
+            <SolidColorBrush x:Key="Theme.BgHeader"       Color="#1F3864"/>
+            <SolidColorBrush x:Key="Theme.BgStatus"       Color="#F0F1F4"/>
+            <SolidColorBrush x:Key="Theme.BgGridRowEven"  Color="#FFFFFF"/>
+            <SolidColorBrush x:Key="Theme.BgGridRowOdd"   Color="#F7F8FA"/>
+            <SolidColorBrush x:Key="Theme.BgGridHeader"   Color="#EEF1F6"/>
+            <SolidColorBrush x:Key="Theme.BgHover"        Color="#E7EDF7"/>
+            <SolidColorBrush x:Key="Theme.BgSelected"     Color="#DBE5F5"/>
+            <SolidColorBrush x:Key="Theme.BgDisabled"     Color="#E5E7EB"/>
+
+            <!-- 텍스트 (라이트) -->
+            <SolidColorBrush x:Key="Theme.FgPrimary"      Color="#1F2937"/>
+            <SolidColorBrush x:Key="Theme.FgSecondary"    Color="#4B5563"/>
+            <SolidColorBrush x:Key="Theme.FgMuted"        Color="#9CA3AF"/>
+            <SolidColorBrush x:Key="Theme.FgOnAccent"     Color="#FFFFFF"/>
+
+            <!-- 강조 (라이트) -->
+            <SolidColorBrush x:Key="Theme.Border"         Color="#E5E7EB"/>
+            <SolidColorBrush x:Key="Theme.Accent"         Color="#1F3864"/>
+            <SolidColorBrush x:Key="Theme.AccentDark"     Color="#162845"/>
+            <SolidColorBrush x:Key="Theme.Cyan"           Color="#3D7BCE"/>
+            <SolidColorBrush x:Key="Theme.Success"        Color="#3DA48B"/>
+            <SolidColorBrush x:Key="Theme.Warning"        Color="#E8A838"/>
+            <SolidColorBrush x:Key="Theme.Error"          Color="#E85555"/>
+
+            <!-- v4 Phase 7: 다이얼로그 다크 호환 키 -->
+            <SolidColorBrush x:Key="Theme.BgDialogHeader" Color="#1F3864"/>
+            <SolidColorBrush x:Key="Theme.BgOnAccentHover" Color="#33FFFFFF"/>
+            <SolidColorBrush x:Key="Theme.BgErrorSoft"    Color="#FDECEC"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,308 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/KgBuilderView.xaml — KG 빌더 화면 (SCR-B02)
+
+     구조 (Image 1 1:1):
+       Row 0: 빌더 설정 카드 (도메인 / 스크립트 / 출력 경로 / 추가 인자)
+       Row 1: 빌드 제어 (빌드 시작, 일시정지, 중지) + 진행률 바 + 상태 라벨
+       Row 2: 실행 로그 (다크 톤 모노스페이스 + 폴더/복사/지우기)
+
+     빌드 실행은 KgBuilderViewModel 이 v3 KgViewModel.BuildCommand 패스스루.
+     실행 로그는 v3 BuildStatus PropertyChanged 를 구독해서 ObservableCollection
+     에 누적 (LogLines).
+     ════════════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.KgBuilderView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Theme.BgMain}"
+             FontFamily="맑은 고딕">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- 0: 빌더 설정 카드 -->
+            <RowDefinition Height="Auto"/>  <!-- 1: 빌드 제어 (버튼 + 진행률) -->
+            <RowDefinition Height="*"/>     <!-- 2: 실행 로그 -->
+        </Grid.RowDefinitions>
+
+        <!-- ════════ Row 0: 빌더 설정 카드 ════════ -->
+        <Border Grid.Row="0" Style="{StaticResource DetailCard}" Padding="18,14">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>  <!-- 헤더 -->
+                    <RowDefinition Height="Auto"/>  <!-- 도메인 + 스크립트 -->
+                    <RowDefinition Height="Auto"/>  <!-- 출력 경로 -->
+                    <RowDefinition Height="Auto"/>  <!-- 추가 인자 -->
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>  <!-- 라벨 -->
+                    <ColumnDefinition Width="*"/>    <!-- 입력 -->
+                    <ColumnDefinition Width="110"/>  <!-- 라벨 -->
+                    <ColumnDefinition Width="*"/>    <!-- 입력 -->
+                </Grid.ColumnDefinitions>
+
+                <!-- 헤더 -->
+                <Border Grid.Row="0" Grid.ColumnSpan="4"
+                        BorderBrush="{DynamicResource Theme.Accent}" BorderThickness="3,0,0,0"
+                        Padding="10,0,0,0" Margin="0,0,0,10">
+                    <TextBlock Text="빌더 설정"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.FgPrimary}"
+                               VerticalAlignment="Center"/>
+                </Border>
+
+                <!-- 도메인 -->
+                <TextBlock Grid.Row="1" Grid.Column="0"
+                           Text="도메인  *"
+                           Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"
+                           VerticalAlignment="Center" Margin="0,4"/>
+                <ComboBox Grid.Row="1" Grid.Column="1"
+                          Style="{StaticResource FilterCombo}"
+                          ItemsSource="{Binding Domains}"
+                          SelectedItem="{Binding SelectedDomain, Mode=TwoWay}"
+                          Margin="0,4,16,4"
+                          HorizontalAlignment="Stretch"/>
+
+                <!-- 스크립트 -->
+                <TextBlock Grid.Row="1" Grid.Column="2"
+                           Text="스크립트"
+                           Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"
+                           VerticalAlignment="Center" Margin="0,4"/>
+                <Border Grid.Row="1" Grid.Column="3"
+                        Background="{DynamicResource Theme.BgCard}"
+                        BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                        CornerRadius="3" Padding="8,5" Margin="0,4">
+                    <TextBlock Text="{Binding ScriptName}"
+                               Foreground="{DynamicResource Theme.FgPrimary}"
+                               FontFamily="Consolas" FontSize="12"
+                               VerticalAlignment="Center"/>
+                </Border>
+
+                <!-- 출력 경로 -->
+                <TextBlock Grid.Row="2" Grid.Column="0"
+                           Text="출력 경로"
+                           Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"
+                           VerticalAlignment="Center" Margin="0,4"/>
+                <Border Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
+                        Background="{DynamicResource Theme.BgCard}"
+                        BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                        CornerRadius="3" Padding="8,5" Margin="0,4">
+                    <TextBlock Text="{Binding OutputPath}"
+                               Foreground="{DynamicResource Theme.FgPrimary}"
+                               FontFamily="Consolas" FontSize="12"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"/>
+                </Border>
+
+                <!-- 추가 인자 -->
+                <TextBlock Grid.Row="3" Grid.Column="0"
+                           Text="추가 인자"
+                           Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"
+                           VerticalAlignment="Center" Margin="0,4"/>
+                <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
+                         Text="{Binding ExtraArgs, UpdateSourceTrigger=PropertyChanged}"
+                         Background="{DynamicResource Theme.BgCard}"
+                         Foreground="{DynamicResource Theme.FgPrimary}"
+                         BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                         CaretBrush="{DynamicResource Theme.FgPrimary}"
+                         FontFamily="Consolas" FontSize="12"
+                         Padding="8,5" Margin="0,4"/>
+            </Grid>
+        </Border>
+
+        <!-- ════════ Row 1: 빌드 제어 + 진행률 ════════ -->
+        <Grid Grid.Row="1" Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>  <!-- 빌드 시작 -->
+                <ColumnDefinition Width="Auto"/>  <!-- 일시정지 -->
+                <ColumnDefinition Width="Auto"/>  <!-- 중지 -->
+                <ColumnDefinition Width="*"/>     <!-- 진행률 -->
+                <ColumnDefinition Width="Auto"/>  <!-- 상태 라벨 -->
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Content="▶ 빌드 시작"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding BuildCommand}"
+                    Margin="0,0,8,0"/>
+            <Button Grid.Column="1" Content="⏸ 일시정지"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding PauseCommand}"
+                    ToolTip="현재 v3 빌더는 일시정지를 지원하지 않습니다."
+                    Margin="0,0,8,0"/>
+            <Button Grid.Column="2" Content="■ 중지"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding StopCommand}"
+                    ToolTip="현재 v3 빌더는 중지를 지원하지 않습니다."
+                    Margin="0,0,16,0"/>
+
+            <!-- 진행률 바 (텍스트 오버레이 포함) -->
+            <Grid Grid.Column="3" Margin="0,0,16,0">
+                <ProgressBar Minimum="0" Maximum="100"
+                             Value="{Binding ProgressPercent, Mode=OneWay}"
+                             Height="32"
+                             Foreground="{DynamicResource Theme.Success}"
+                             Background="{DynamicResource Theme.BgCard}"
+                             BorderBrush="{DynamicResource Theme.Border}"
+                             BorderThickness="1"/>
+                <TextBlock Text="{Binding ProgressLabel}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{DynamicResource Theme.FgPrimary}"
+                           FontWeight="Bold" FontSize="12"/>
+            </Grid>
+
+            <!-- 상태 라벨 (Image 1: "85/130 노드 · ETA 4초 ●  빌드 중") -->
+            <StackPanel Grid.Column="4" Orientation="Vertical" VerticalAlignment="Center">
+                <TextBlock Text="{Binding CurrentStatus}"
+                           Foreground="{DynamicResource Theme.Accent}"
+                           FontSize="12" FontWeight="Bold"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="240"
+                           HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,2,0,0">
+                    <Ellipse Width="8" Height="8" Margin="0,0,6,0"
+                             VerticalAlignment="Center">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{DynamicResource Theme.FgMuted}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsBuilding}" Value="True">
+                                        <Setter Property="Fill" Value="{DynamicResource Theme.Success}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Foreground="{DynamicResource Theme.FgMuted}" FontSize="11">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="대기"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsBuilding}" Value="True">
+                                        <Setter Property="Text" Value="빌드 중"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- ════════ Row 2: 실행 로그 ════════ -->
+        <Border Grid.Row="2" Margin="0,14,0,0"
+                Background="#0B1622"
+                BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                CornerRadius="4">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>  <!-- 헤더 -->
+                    <RowDefinition Height="*"/>     <!-- 로그 -->
+                </Grid.RowDefinitions>
+
+                <!-- 헤더: 제목 + 우측 액션 -->
+                <Grid Grid.Row="0"
+                      Background="#10202E"
+                      Margin="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0"
+                            BorderBrush="#5BA3D9" BorderThickness="3,0,0,0"
+                            Padding="10,8">
+                        <TextBlock Text="실행 로그"
+                                   FontSize="13" FontWeight="Bold"
+                                   Foreground="#F0F4F8"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+
+                    <Button Grid.Column="1" Content="📁 폴더"
+                            Background="#1A2B3C" Foreground="#F0F4F8"
+                            BorderBrush="#2A3F58" BorderThickness="1"
+                            Padding="10,4" Margin="6,6,4,6"
+                            Cursor="Hand"
+                            Command="{Binding OpenOutputFolderCommand}"
+                            ToolTip="빌더 출력 폴더(%APPDATA%/SPILab/NowMoment/kg_builder)를 엽니다."/>
+                    <Button Grid.Column="2" Content="📋 복사"
+                            Background="#1A2B3C" Foreground="#F0F4F8"
+                            BorderBrush="#2A3F58" BorderThickness="1"
+                            Padding="10,4" Margin="0,6,4,6"
+                            Cursor="Hand"
+                            Command="{Binding CopyLogCommand}"
+                            ToolTip="로그 전체를 클립보드에 복사"/>
+                    <Button Grid.Column="3" Content="🗑 지우기"
+                            Background="#1A2B3C" Foreground="#F0F4F8"
+                            BorderBrush="#2A3F58" BorderThickness="1"
+                            Padding="10,4" Margin="0,6,10,6"
+                            Cursor="Hand"
+                            Command="{Binding ClearLogCommand}"
+                            ToolTip="로그 비우기"/>
+                </Grid>
+
+                <!-- 로그 본문 -->
+                <ListBox x:Name="LogList" Grid.Row="1"
+                         ItemsSource="{Binding LogLines}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         HorizontalContentAlignment="Stretch">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Focusable" Value="False"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <ContentPresenter/>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="14,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>   <!-- 타임스탬프 -->
+                                    <ColumnDefinition Width="60"/>   <!-- 레벨 -->
+                                    <ColumnDefinition Width="*"/>    <!-- 메시지 -->
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Timestamp}"
+                                           Foreground="#9DB4CC"
+                                           FontFamily="Consolas" FontSize="12"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Level}"
+                                           FontFamily="Consolas" FontSize="12" FontWeight="Bold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#5BA3D9"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Level}" Value="OK">
+                                                    <Setter Property="Foreground" Value="#4CAF50"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Level}" Value="WARN">
+                                                    <Setter Property="Foreground" Value="#FFA726"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Level}" Value="ERROR">
+                                                    <Setter Property="Foreground" Value="#EF5350"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Grid.Column="2" Text="{Binding Message}"
+                                           Foreground="#F0F4F8"
+                                           FontFamily="Consolas" FontSize="12"
+                                           TextWrapping="Wrap"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

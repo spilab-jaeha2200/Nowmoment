@@ -1,0 +1,190 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     KgDomainEditDialog.xaml — 새 KG 도메인 등록 (v2.7.11)
+
+     v2.7.10 → v2.7.11 변경 (라이트/다크 테마 호환):
+       • 하드코딩 다크 색상(#1A2332 등) + DarkInputs.xaml 의존 제거.
+       • 모든 색상을 DynamicResource Theme.* 로 바인딩 →
+         ThemeManager.Apply("Light"/"Dark") 호출 시 자동 추종.
+       • 자산 편집 다이얼로그 5종과 동일한 EditDialogStyles.xaml 키 사용:
+           DlgFieldLabel / DlgInputBox / DlgRadioButton /
+           DlgFooterPrimaryBtn / DlgFooterCancelBtn / DlgKgSmallBtn / DlgSectionHeader
+       • 코드비하인드(KgDomainEditDialog.xaml.cs)는 변경 없음 —
+         x:Name 컨트롤·이벤트 핸들러 시그니처를 그대로 유지.
+
+     v2.7.9 정책 유지:
+       • cs_file / python_engine_folder 선택 시 임포트 파일 행 비활성화.
+       • 'none' 일 때만 임포트 파일 입력 활성.
+-->
+<Window x:Class="SPILab.NowMoment.Views.KgDomainEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KG 도메인 등록" Height="820" Width="660"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="{DynamicResource Theme.BgMain}"
+        FontFamily="맑은 고딕"
+        TextOptions.TextFormattingMode="Display">
+
+    <!-- 외곽 1px 테두리 (라이트에서 흰 배경이 떠 보이지 않도록) -->
+    <Border BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="52"/>    <!-- 헤더 -->
+                <RowDefinition Height="*"/>     <!-- 본문 -->
+                <RowDefinition Height="Auto"/>  <!-- 푸터 -->
+            </Grid.RowDefinitions>
+
+            <!-- ══ 헤더 (네이비 — 자산 다이얼로그와 동일 톤) ══ -->
+            <Border Grid.Row="0" Background="{DynamicResource Theme.BgDialogHeader}">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                            Margin="24,0,0,0">
+                    <TextBlock Text="🗂" Foreground="White"
+                               FontSize="16" Margin="0,0,10,0"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="KG 도메인 등록"
+                               Foreground="White" FontSize="15" FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ══ 본문 ══ -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                          Background="{DynamicResource Theme.BgMain}">
+                <Grid Margin="28,22,28,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>   <!-- 0 코드 -->
+                        <RowDefinition Height="Auto"/>   <!-- 1 라벨 -->
+                        <RowDefinition Height="Auto"/>   <!-- 2 빌더 종류 -->
+                        <RowDefinition Height="Auto"/>   <!-- 3 출력 베이스네임 -->
+                        <RowDefinition Height="Auto"/>   <!-- 4 안내 박스 -->
+                        <RowDefinition Height="Auto"/>   <!-- 5 빌드 스크립트 -->
+                        <RowDefinition Height="Auto"/>   <!-- 6 Dump 스크립트 -->
+                        <RowDefinition Height="Auto"/>   <!-- 7 엔진 -->
+                        <RowDefinition Height="Auto"/>   <!-- 8 임포트 파일 -->
+                        <RowDefinition Height="*"/>      <!-- 9 에러 -->
+                    </Grid.RowDefinitions>
+
+                    <!-- 코드 -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="코드 *"
+                               Style="{StaticResource DlgFieldLabel}" Margin="0,0,12,0"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                             x:Name="TxtCode" Style="{StaticResource DlgInputBox}"
+                             Margin="0,6"/>
+
+                    <!-- 표시 라벨 -->
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="표시 라벨 *"
+                               Style="{StaticResource DlgFieldLabel}" Margin="0,0,12,0"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                             x:Name="TxtLabel" Style="{StaticResource DlgInputBox}"
+                             Margin="0,6"/>
+
+                    <!-- 빌더 종류 -->
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="빌더 종류"
+                               Style="{StaticResource DlgFieldLabel}"
+                               VerticalAlignment="Top" Margin="0,12,12,0"/>
+                    <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                                Margin="0,8,0,8">
+                        <RadioButton x:Name="RbNone" GroupName="Kind" IsChecked="True"
+                                     Style="{StaticResource DlgRadioButton}"
+                                     Checked="Kind_Changed"
+                                     Content="없음 — TTL/JSON 파일을 직접 임포트해 사용"/>
+                        <RadioButton x:Name="RbCs" GroupName="Kind"
+                                     Style="{StaticResource DlgRadioButton}"
+                                     Checked="Kind_Changed"
+                                     Content="C# 엔진 파일 1개 (build_kg_*.py 가 정적분석)"/>
+                        <RadioButton x:Name="RbPyDir" GroupName="Kind"
+                                     Style="{StaticResource DlgRadioButton}"
+                                     Checked="Kind_Changed"
+                                     Content="Python engine 폴더 (C# dump 메타 → KG , 2단계 빌드)"/>
+                    </StackPanel>
+
+                    <!-- 출력 베이스네임 -->
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="출력 베이스네임"
+                               Style="{StaticResource DlgFieldLabel}" Margin="0,0,12,0"
+                               ToolTip="출력 .json/.ttl 의 공통 파일명. 비워두면 'kg_{코드}' 자동 사용. 출력 폴더는 항상 %APPDATA%\Roaming\SPILab\NowMoment\kg_builder."/>
+                    <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
+                             x:Name="TxtBasename" Style="{StaticResource DlgInputBox}"
+                             Margin="0,6"/>
+
+                    <!-- 안내 박스 -->
+                    <Border Grid.Row="4" Grid.ColumnSpan="3"
+                            Background="{DynamicResource Theme.BgStatus}"
+                            BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                            CornerRadius="4" Padding="12,10" Margin="0,8,0,6">
+                        <TextBlock x:Name="TxtKindHelp"
+                                   Foreground="{DynamicResource Theme.FgSecondary}"
+                                   FontFamily="맑은 고딕" FontSize="12" TextWrapping="Wrap"
+                                   Text="빌더 종류 = '없음' — TTL/JSON 파일을 [임포트 파일] 에서 선택하세요. 등록 직후 자동 임포트됩니다."/>
+                    </Border>
+
+                    <!-- 빌드 스크립트 -->
+                    <TextBlock Grid.Row="5" Grid.Column="0" x:Name="LblBuildScript"
+                               Text="빌드 스크립트"
+                               Style="{StaticResource DlgFieldLabel}" Margin="0,0,12,0"/>
+                    <TextBox Grid.Row="5" Grid.Column="1" x:Name="TxtBuildScriptPath"
+                             Style="{StaticResource DlgInputBox}" Margin="0,6,8,6"/>
+                    <Button Grid.Row="5" Grid.Column="2" x:Name="BtnBrowseScript"
+                            Content="찾기..." Width="80" Height="32" Margin="0,6"
+                            Style="{StaticResource DlgKgSmallBtn}"
+                            Click="BtnBrowseScript_Click"/>
+
+                    <!-- Dump 스크립트 -->
+                    <TextBlock Grid.Row="6" Grid.Column="0" x:Name="LblDumpScript"
+                               Text="Dump 스크립트"
+                               Style="{StaticResource DlgFieldLabel}" Margin="0,0,12,0"/>
+                    <TextBox Grid.Row="6" Grid.Column="1" x:Name="TxtDumpScriptPath"
+                             Style="{StaticResource DlgInputBox}" Margin="0,6,8,6"/>
+                    <Button Grid.Row="6" Grid.Column="2" x:Name="BtnBrowseDump"
+                            Content="찾기..." Width="80" Height="32" Margin="0,6"
+                            Style="{StaticResource DlgKgSmallBtn}"
+                            Click="BtnBrowseDump_Click"/>
+
+                    <!-- 엔진 파일/폴더 -->
+                    <TextBlock Grid.Row="7" Grid.Column="0" x:Name="LblEngineFile"
+                               Text="엔진 파일 (.cs)"
+                               Style="{StaticResource DlgFieldLabel}" Margin="0,0,12,0"/>
+                    <TextBox Grid.Row="7" Grid.Column="1" x:Name="TxtEnginePath"
+                             Style="{StaticResource DlgInputBox}" Margin="0,6,8,6"/>
+                    <Button Grid.Row="7" Grid.Column="2" x:Name="BtnBrowseEngine"
+                            Content="찾기..." Width="80" Height="32" Margin="0,6"
+                            Style="{StaticResource DlgKgSmallBtn}"
+                            Click="BtnBrowseEngine_Click"/>
+
+                    <!-- 임포트 파일 -->
+                    <TextBlock Grid.Row="8" Grid.Column="0" x:Name="LblImportFile"
+                               Text="임포트 파일 *"
+                               Style="{StaticResource DlgFieldLabel}" Margin="0,0,12,0"/>
+                    <TextBox Grid.Row="8" Grid.Column="1" x:Name="TxtImportPath"
+                             Style="{StaticResource DlgInputBox}" Margin="0,6,8,6"/>
+                    <Button Grid.Row="8" Grid.Column="2" x:Name="BtnBrowseImport"
+                            Content="찾기..." Width="80" Height="32" Margin="0,6"
+                            Style="{StaticResource DlgKgSmallBtn}"
+                            Click="BtnBrowseImport_Click"/>
+
+                    <!-- 에러 메시지 -->
+                    <TextBlock Grid.Row="9" Grid.ColumnSpan="3" x:Name="TxtError"
+                               Foreground="{DynamicResource Theme.Error}"
+                               FontFamily="맑은 고딕" FontSize="12"
+                               TextWrapping="Wrap" Margin="0,10,0,0"/>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- ══ 푸터 ══ -->
+            <Border Grid.Row="2" Background="{DynamicResource Theme.BgCard}"
+                    BorderBrush="{DynamicResource Theme.Border}" BorderThickness="0,1,0,0"
+                    Padding="28,14">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="취소" Margin="0,0,10,0" IsCancel="True"
+                            Style="{StaticResource DlgFooterCancelBtn}"/>
+                    <Button Content="등록" IsDefault="True"
+                            Style="{StaticResource DlgFooterPrimaryBtn}"
+                            Click="OkButton_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

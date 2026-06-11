@@ -1,0 +1,404 @@
+<Window x:Class="SPILab.NowMoment.Views.MainWindow_v4"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:SPILab.NowMoment.Views"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="NowMoment v4.0 — 기술자산관리 시스템"
+        Height="900" Width="1500"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource Theme.BgMain}"
+        FontFamily="Malgun Gothic"
+        WindowStyle="None"
+        AllowsTransparency="False"
+        ResizeMode="CanResize">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            GlassFrameThickness="0"
+                            CornerRadius="0"
+                            ResizeBorderThickness="6"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- 헤더 우측 아이콘 버튼 (전역검색·설정·관리자 공통) -->
+        <Style x:Key="HeaderIconButton" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground"      Value="{DynamicResource Theme.FgSecondary}"/>
+            <Setter Property="Padding"         Value="10,6"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{DynamicResource Theme.BgHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 헤더 우측 창 제어 버튼 (─ □ ✕) -->
+        <Style x:Key="CaptionButton" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground"      Value="{DynamicResource Theme.FgSecondary}"/>
+            <Setter Property="Width"           Value="44"/>
+            <Setter Property="Height"          Value="44"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="FontFamily"      Value="Segoe MDL2 Assets"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{DynamicResource Theme.BgHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 닫기 버튼 — 호버 시 적색 -->
+        <Style x:Key="CaptionCloseButton" TargetType="Button" BasedOn="{StaticResource CaptionButton}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#E81123"/>
+                                <Setter Property="Foreground"                 Value="#FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- NavigationView 아이템 스타일 — 라이트/다크 양쪽에서 가독성 확보 -->
+        <Style x:Key="NavItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding"           Value="0"/>
+            <Setter Property="BorderThickness"   Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor"            Value="Hand"/>
+            <Setter Property="Foreground"        Value="{DynamicResource Theme.FgPrimary}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="Transparent" Padding="0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="3"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Rectangle x:Name="Indicator" Fill="Transparent" Width="3"/>
+                                <ContentPresenter Grid.Column="1"
+                                                  Margin="12,5"
+                                                  VerticalAlignment="Center"
+                                                  TextBlock.Foreground="{TemplateBinding Foreground}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd"        Property="Background" Value="{DynamicResource Theme.BgHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd"        Property="Background" Value="{DynamicResource Theme.BgSelected}"/>
+                                <Setter TargetName="Indicator" Property="Fill"       Value="{DynamicResource Theme.Accent}"/>
+                                <Setter                        Property="Foreground" Value="{DynamicResource Theme.FgPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 그룹 헤더 텍스트 스타일 (StackPanel 안의 TextBlock 용) -->
+        <Style x:Key="NavGroupHeaderText" TargetType="TextBlock">
+            <Setter Property="FontWeight"          Value="Bold"/>
+            <Setter Property="FontSize"            Value="11"/>
+            <Setter Property="Foreground"          Value="{DynamicResource Theme.FgSecondary}"/>
+            <Setter Property="VerticalAlignment"   Value="Center"/>
+        </Style>
+
+        <!-- 그룹 헤더 컬러 아이콘 Geometry -->
+        <Geometry x:Key="IcoFolderGroup">M2,4 L8,4 L10,6 L18,6 L18,16 L2,16 Z</Geometry>
+        <Geometry x:Key="IcoGraphGroup">M5,5 A2,2 0 1 1 5,5.01 M15,5 A2,2 0 1 1 15,5.01 M10,15 A2,2 0 1 1 10,15.01 M6.5,6.5 L9,13 M14,6.5 L11,13 M7,5 L13,5</Geometry>
+        <Geometry x:Key="IcoToolGroup">M12,2 A4,4 0 0 0 7,7 L2,12 L4,14 L9,9 A4,4 0 0 0 14,4 L11,7 L9,5 Z</Geometry>
+        <!-- 대시보드 집 아이콘 -->
+        <Geometry x:Key="IcoHome">M10,2 L18,9 L15.5,9 L15.5,17 L11.5,17 L11.5,11 L8.5,11 L8.5,17 L4.5,17 L4.5,9 L2,9 Z</Geometry>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ── 상단 타이틀 바 (Theme.BgHeader 키로 라이트/다크 자동 전환) ─── -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2"
+                Background="{DynamicResource Theme.BgHeader}"
+                BorderBrush="{DynamicResource Theme.Border}"
+                BorderThickness="0,0,0,1" Height="44"
+                MouseLeftButtonDown="Header_MouseDown">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 좌측: 로고 -->
+                <TextBlock Grid.Column="0" Text="☰  NowMoment v4"
+                           FontWeight="SemiBold" FontSize="15"
+                           Foreground="{DynamicResource Theme.FgPrimary}"
+                           Margin="16,0" VerticalAlignment="Center"/>
+
+                <!-- 우측: 전역검색 · 설정 · 관리자 · 창 제어 -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            VerticalAlignment="Stretch">
+                    <Button Style="{StaticResource HeaderIconButton}"
+                            VerticalAlignment="Center"
+                            ToolTip="전역검색 (Ctrl+F)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#x1F50D;" FontFamily="Segoe UI Emoji"
+                                       FontSize="13" VerticalAlignment="Center"
+                                       Margin="0,0,6,0"/>
+                            <TextBlock Text="전역검색 (Ctrl+F)" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource HeaderIconButton}"
+                            VerticalAlignment="Center"
+                            Margin="2,0"
+                            ToolTip="설정"
+                            Click="OnSettingsClick">
+                        <TextBlock Text="&#x2699;&#xFE0F;" FontFamily="Segoe UI Emoji"
+                                   FontSize="14" VerticalAlignment="Center"/>
+                    </Button>
+
+                    <Button Style="{StaticResource HeaderIconButton}"
+                            VerticalAlignment="Center"
+                            Margin="2,0,8,0"
+                            ToolTip="현재 사용자">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#x1F464;" FontFamily="Segoe UI Emoji"
+                                       FontSize="13" VerticalAlignment="Center"
+                                       Margin="0,0,6,0"/>
+                            <TextBlock Text="관리자" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- 창 제어 버튼 -->
+                    <Button x:Name="MinBtn" Style="{StaticResource CaptionButton}"
+                            Content="&#xE921;" Click="MinBtn_Click" ToolTip="최소화"/>
+                    <Button x:Name="MaxBtn" Style="{StaticResource CaptionButton}"
+                            Content="&#xE922;" Click="MaxBtn_Click" ToolTip="최대화"/>
+                    <Button x:Name="CloseBtn" Style="{StaticResource CaptionCloseButton}"
+                            Content="&#xE8BB;" Click="CloseBtn_Click" ToolTip="닫기"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ── 사이드 NavigationView ─────────────────────── -->
+        <Border Grid.Row="1" Grid.Column="0"
+                Background="{DynamicResource Theme.BgSidebar}"
+                BorderBrush="{DynamicResource Theme.Border}"
+                BorderThickness="0,0,1,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- 그룹: 대시보드 (단독) -->
+                    <ListBox x:Name="NavTop" BorderThickness="0" Background="Transparent"
+                             Padding="0" Margin="0,6,0,0"
+                             SelectionChanged="OnNavChanged"
+                             ItemContainerStyle="{StaticResource NavItemStyle}">
+                        <ListBoxItem Tag="dashboard">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#x1F3E0;" FontFamily="Segoe UI Emoji"
+                                           FontSize="13" Margin="0,0,8,0"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Text="대시보드" FontSize="12" FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource Theme.FgPrimary}"/>
+                            </StackPanel>
+                        </ListBoxItem>
+                    </ListBox>
+
+                    <!-- 그룹 A: 기술자산 관리 -->
+                    <StackPanel Orientation="Horizontal" Margin="14,16,14,4">
+                        <TextBlock Text="&#x1F4C1;" FontFamily="Segoe UI Emoji"
+                                   FontSize="14" Margin="0,0,7,0"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="기술자산 관리" Style="{StaticResource NavGroupHeaderText}"/>
+                    </StackPanel>
+                    <ListBox x:Name="NavAssets" BorderThickness="0" Background="Transparent"
+                             SelectionChanged="OnNavChanged"
+                             ItemContainerStyle="{StaticResource NavItemStyle}">
+                        <ListBoxItem Tag="asset_code">
+                            <TextBlock Text="소스코드 / 모듈" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="asset_model">
+                            <TextBlock Text="AI 모델 / 데이터" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="asset_document">
+                            <TextBlock Text="문서 / 논문" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="asset_patent">
+                            <TextBlock Text="특허 / IP" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="asset_experiment">
+                            <TextBlock Text="실험 / 측정" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="project_tag">
+                            <TextBlock Text="프로젝트 · 태그" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="audit_log">
+                            <TextBlock Text="이력 / 변경 로그" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                    </ListBox>
+
+                    <!-- 그룹 B: 지식그래프 변환 -->
+                    <StackPanel Orientation="Horizontal" Margin="14,16,14,4">
+                        <TextBlock Text="&#x1F578;" FontFamily="Segoe UI Emoji"
+                                   FontSize="14" Margin="0,0,7,0"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="지식그래프 변환" Style="{StaticResource NavGroupHeaderText}"/>
+                    </StackPanel>
+                    <ListBox x:Name="NavKg" BorderThickness="0" Background="Transparent"
+                             SelectionChanged="OnNavChanged"
+                             ItemContainerStyle="{StaticResource NavItemStyle}">
+                        <ListBoxItem Tag="kg_main">
+                            <TextBlock Text="KG 노드/엣지" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="kg_builder">
+                            <TextBlock Text="KG 빌더" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="kg_import">
+                            <TextBlock Text="JSON/TTL 임포트" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="kg_graph">
+                            <TextBlock Text="그래프 시각화" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="asset_kg_link">
+                            <TextBlock Text="자산 ↔ KG 링크" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="ttl_studio">
+                            <TextBlock Text="TTL Studio" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="kg_domain">
+                            <TextBlock Text="도메인 관리" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                    </ListBox>
+
+                    <!-- 그룹 C: 통합 도구 -->
+                    <StackPanel Orientation="Horizontal" Margin="14,16,14,4">
+                        <TextBlock Text="&#x1F527;" FontFamily="Segoe UI Emoji"
+                                   FontSize="14" Margin="0,0,7,0"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="통합 도구" Style="{StaticResource NavGroupHeaderText}"/>
+                    </StackPanel>
+                    <ListBox x:Name="NavTools" BorderThickness="0" Background="Transparent"
+                             SelectionChanged="OnNavChanged"
+                             ItemContainerStyle="{StaticResource NavItemStyle}">
+                        <ListBoxItem Tag="folder_import">
+                            <TextBlock Text="폴더 임포트" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="db_backup">
+                            <TextBlock Text="DB 백업/복원" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                        <ListBoxItem Tag="pdf_catalog">
+                            <TextBlock Text="PDF 카탈로그" FontSize="12"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </ListBoxItem>
+                    </ListBox>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ── 본문 (동적 화면 컨테이너) ─────────────────── -->
+        <Grid Grid.Row="1" Grid.Column="1" Background="{DynamicResource Theme.BgMain}">
+            <ContentControl x:Name="ContentHost"/>
+        </Grid>
+
+        <!-- ── 상태바 ────────────────────────────────────── -->
+        <Border Grid.Row="2" Grid.ColumnSpan="2"
+                Background="{DynamicResource Theme.BgStatus}"
+                BorderBrush="{DynamicResource Theme.Border}"
+                BorderThickness="0,1,0,0" Padding="14,5">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="준비됨" FontSize="11"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="  |  " FontSize="11"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="DB: " FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding DbDisplay}" FontSize="11"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="  |  " FontSize="11"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="Python: " FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding PythonVersion}" FontSize="11"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="  |  " FontSize="11"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="로그인: " FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding CurrentUser}" FontSize="11"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,110 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     SecureVerifyDialog.xaml — NowMoment v4.1 Phase 3 (작업 3)
+
+     개선 개발계획서 5.1 단계 2 — Secure-Verify 인증 대화상자.
+     Core 기능(KG 빌드/자동분류)을 처음 호출할 때 표시된다.
+
+     입력: 사번 + 비밀번호 (+ 정책상 2차 인증 코드).
+     기존 다이얼로그(KgEdgeEditDialog 등)와 동일하게 EditDialogStyles.xaml
+     의 공유 스타일(DlgFieldLabel/DlgInputBox/DlgFooter*Btn)과
+     DynamicResource Theme.* 색상을 사용 — 라이트/다크 자동 추종.
+     코드비하인드(SecureVerifyDialog.xaml.cs)가 ICredentialPrompt 를 구현.
+-->
+<Window x:Class="SPILab.NowMoment.Views.SecureVerifyDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="보안 확인 모드 (Secure-Verify)"
+        Width="420" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        FontFamily="맑은 고딕"
+        Background="{DynamicResource Theme.BgMain}">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Views/Themes/EditDialogStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource Theme.BgCard}">
+        <StackPanel>
+
+            <!-- 헤더 -->
+            <!-- 헤더 배경(BgDialogHeader)은 짙은 남색으로 고정되므로,
+                 글자색도 밝은 색으로 고정한다. Theme.Fg* 는 밝은 카드
+                 배경용 어두운 색이라 이 헤더 위에서는 보이지 않는다. -->
+            <Border Background="{DynamicResource Theme.BgDialogHeader}"
+                    Padding="20,16">
+                <StackPanel>
+                    <TextBlock Text="SPILab Core 접근 인증"
+                               FontSize="16" FontWeight="SemiBold"
+                               Foreground="#FFFFFF"/>
+                    <TextBlock Text="Core 기능을 사용하려면 인증이 필요합니다."
+                               FontSize="12" Margin="0,4,0,0"
+                               Foreground="#C8D0E0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 입력 영역 -->
+            <StackPanel Margin="20,18,20,8">
+
+                <TextBlock Text="사번" Style="{StaticResource DlgFieldLabel}"
+                           HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                <TextBox x:Name="EmployeeIdBox"
+                         Style="{StaticResource DlgInputBox}"
+                         Margin="0,0,0,14"/>
+
+                <TextBlock Text="비밀번호" Style="{StaticResource DlgFieldLabel}"
+                           HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                <PasswordBox x:Name="PasswordBox"
+                             Margin="0,0,0,14" Padding="8,6"
+                             MinHeight="32" FontSize="13"
+                             Background="{DynamicResource Theme.BgCard}"
+                             Foreground="{DynamicResource Theme.FgPrimary}"
+                             BorderBrush="{DynamicResource Theme.Border}"/>
+
+                <!-- 2차 인증 — 정책상 요구될 때만 표시 (코드비하인드 제어) -->
+                <StackPanel x:Name="SecondFactorPanel" Visibility="Collapsed">
+                    <TextBlock Text="2차 인증 코드" Style="{StaticResource DlgFieldLabel}"
+                               HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                    <TextBox x:Name="SecondFactorBox"
+                             Style="{StaticResource DlgInputBox}"
+                             MaxLength="10" Margin="0,0,0,14"/>
+                </StackPanel>
+
+                <!-- 오류 메시지 -->
+                <Border x:Name="ErrorBox"
+                        Visibility="Collapsed"
+                        Background="{DynamicResource Theme.BgErrorSoft}"
+                        Padding="10,7" Margin="0,0,0,10" CornerRadius="3">
+                    <TextBlock x:Name="ErrorText"
+                               FontSize="12" TextWrapping="Wrap"
+                               Foreground="{DynamicResource Theme.Error}"/>
+                </Border>
+
+            </StackPanel>
+
+            <!-- 푸터 버튼 -->
+            <Border Background="{DynamicResource Theme.BgDialogHeader}"
+                    Padding="20,12">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="CancelButton"
+                            Content="취소" Width="88"
+                            Style="{StaticResource DlgFooterCancelBtn}"
+                            Margin="0,0,8,0"
+                            IsCancel="True"
+                            Click="CancelButton_Click"/>
+                    <Button x:Name="VerifyButton"
+                            Content="인증" Width="88"
+                            Style="{StaticResource DlgFooterPrimaryBtn}"
+                            IsDefault="True"
+                            Click="VerifyButton_Click"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </Border>
+</Window>

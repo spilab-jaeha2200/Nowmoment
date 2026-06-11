@@ -1,0 +1,278 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/KgNodesEdgesView.xaml — KG 노드/엣지 편집 화면 (SCR-B01)
+
+     구조 (Image 1 1:1):
+       Row 0: 툴바 (도메인 ▼ / 타입 ▼ / 검색 | + 노드 / + 엣지 / 수정 / 삭제)
+       Row 1: 본문 (좌측 노드 그리드 + 우측 엣지 그리드)
+       Row 2: props JSON 편집 카드 (헤더 + 텍스트 박스 + JSON 검증/저장/되돌리기)
+       Row 3: 화면 하단 캡션
+
+     모든 색상은 DynamicResource 토큰 → Light/Dark 자동 전환.
+     CRUD 는 KgNodesEdgesViewModel 을 통해 v3 KgViewModel 의
+     AddNode / EditNode / DeleteNode / AddEdge / DeleteEdge / RefreshCommand 를
+     그대로 패스스루 (= v3 KgNodeEditDialog / KgEdgeEditDialog 호출).
+     ════════════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.KgNodesEdgesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Theme.BgMain}"
+             FontFamily="맑은 고딕">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- 툴바 -->
+            <RowDefinition Height="*"/>      <!-- 본문 (노드 + 엣지 그리드) -->
+            <RowDefinition Height="Auto"/>   <!-- props JSON 카드 -->
+            <RowDefinition Height="Auto"/>   <!-- 하단 캡션 -->
+        </Grid.RowDefinitions>
+
+        <!-- ════════ Row 0: 툴바 ════════ -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>  <!-- 도메인 -->
+                <ColumnDefinition Width="Auto"/>  <!-- 타입 -->
+                <ColumnDefinition Width="*"/>     <!-- 검색 -->
+                <ColumnDefinition Width="Auto"/>  <!-- + 노드 -->
+                <ColumnDefinition Width="Auto"/>  <!-- + 엣지 -->
+                <ColumnDefinition Width="Auto"/>  <!-- 수정 -->
+                <ColumnDefinition Width="Auto"/>  <!-- 삭제 -->
+                <ColumnDefinition Width="Auto"/>  <!-- 새로고침 -->
+            </Grid.ColumnDefinitions>
+
+            <ComboBox Grid.Column="0"
+                      Style="{StaticResource FilterCombo}"
+                      ItemsSource="{Binding Domains}"
+                      SelectedItem="{Binding SelectedDomain, Mode=TwoWay}"
+                      MinWidth="140" Margin="0,0,8,0"/>
+
+            <ComboBox Grid.Column="1"
+                      Style="{StaticResource FilterCombo}"
+                      ItemsSource="{Binding NodeTypes}"
+                      SelectedItem="{Binding TypeFilter, Mode=TwoWay}"
+                      MinWidth="130" Margin="0,0,8,0"/>
+
+            <TextBox Grid.Column="2"
+                     Style="{StaticResource SearchTextBox}"
+                     Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                     MinWidth="280" Margin="0,0,12,0"/>
+
+            <Button Grid.Column="3" Content="＋ 노드"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding AddNodeCommand}"
+                    Margin="0,0,8,0"/>
+            <Button Grid.Column="4" Content="＋ 엣지"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding AddEdgeCommand}"
+                    Margin="0,0,8,0"/>
+            <Button Grid.Column="5" Content="✎ 수정"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding EditNodeCommand}"
+                    Margin="0,0,8,0"/>
+            <Button Grid.Column="6" Content="✗ 삭제"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding DeleteNodeCommand}"
+                    Margin="0,0,8,0"/>
+            <Button Grid.Column="7" Content="🔄"
+                    Style="{StaticResource SecondaryButton}"
+                    ToolTip="DB에서 KG 노드/엣지 재조회"
+                    Command="{Binding RefreshCommand}"/>
+        </Grid>
+
+        <!-- ════════ Row 1: 본문 (노드 + 엣지) ════════ -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>   <!-- 노드 -->
+                <ColumnDefinition Width="12"/>  <!-- gap -->
+                <ColumnDefinition Width="*"/>   <!-- 엣지 -->
+            </Grid.ColumnDefinitions>
+
+            <!-- 좌측: 노드 -->
+            <Border Grid.Column="0" Style="{StaticResource DetailCard}" Padding="14,12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding NodesHeader}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Accent}"
+                               Margin="0,0,0,8"/>
+
+                    <Border Grid.Row="1"
+                            BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                            CornerRadius="4">
+                        <DataGrid x:Name="NodeGrid"
+                                  Style="{StaticResource V4DataGrid}"
+                                  ItemsSource="{Binding NodeRows}"
+                                  SelectedItem="{Binding SelectedNodeRow, Mode=TwoWay}"
+                                  MouseDoubleClick="OnNodeDoubleClick">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="36">
+                                    <DataGridTemplateColumn.HeaderTemplate>
+                                        <DataTemplate>
+                                            <CheckBox x:Name="NodeHeaderCheckBox"
+                                                      HorizontalAlignment="Center"
+                                                      IsThreeState="False"
+                                                      Foreground="{DynamicResource Theme.FgPrimary}"
+                                                      Checked="OnNodeHeaderCheckChanged"
+                                                      Unchecked="OnNodeHeaderCheckChanged"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.HeaderTemplate>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                      IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="ID"     Binding="{Binding Id}"     Width="2*" MinWidth="120"/>
+                                <DataGridTextColumn Header="타입"   Binding="{Binding Type}"   Width="110"/>
+                                <DataGridTextColumn Header="라벨"   Binding="{Binding Label}"  Width="2*" MinWidth="140"/>
+                                <DataGridTextColumn Header="차수"   Binding="{Binding Degree}" Width="70"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- 우측: 엣지 -->
+            <Border Grid.Column="2" Style="{StaticResource DetailCard}" Padding="14,12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding EdgesHeader}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Accent}"
+                               Margin="0,0,0,8"/>
+
+                    <Border Grid.Row="1"
+                            BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                            CornerRadius="4">
+                        <DataGrid x:Name="EdgeGrid"
+                                  Style="{StaticResource V4DataGrid}"
+                                  ItemsSource="{Binding EdgeRows}">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="36">
+                                    <DataGridTemplateColumn.HeaderTemplate>
+                                        <DataTemplate>
+                                            <CheckBox x:Name="EdgeHeaderCheckBox"
+                                                      HorizontalAlignment="Center" IsThreeState="False"
+                                                      Foreground="{DynamicResource Theme.FgPrimary}"
+                                                      Checked="OnEdgeHeaderCheckChanged"
+                                                      Unchecked="OnEdgeHeaderCheckChanged"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.HeaderTemplate>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                      IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="src → dst" Binding="{Binding SrcDst}" Width="*" MinWidth="240"/>
+                                <DataGridTextColumn Header="관계"      Binding="{Binding Rel}"    Width="140"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ════════ Row 2: props JSON 편집 카드 ════════ -->
+        <Border Grid.Row="2" Style="{StaticResource DetailCard}" Margin="0,12,0,0" Padding="14,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- 헤더 라인: 제목 + 우측 액션 -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding PropsEditorHeader}"
+                               FontSize="13" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Accent}"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Content="JSON 검증"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ValidateJsonCommand}"
+                            Margin="0,0,8,0"/>
+                    <Button Grid.Column="2" Content="💾 저장"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding SaveJsonCommand}"
+                            Margin="0,0,8,0"/>
+                    <Button Grid.Column="3" Content="↶ 되돌리기"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding RevertJsonCommand}"/>
+                </Grid>
+
+                <!-- JSON 편집 박스 -->
+                <Border Grid.Row="1"
+                        Background="{DynamicResource Theme.BgCard}"
+                        BorderBrush="{DynamicResource Theme.Border}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Margin="0,10,0,0"
+                        Padding="10,8"
+                        MinHeight="120" MaxHeight="200">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <TextBox x:Name="PropsTextBox"
+                                 Text="{Binding PropsJson, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource Theme.FgPrimary}"
+                                 BorderThickness="0"
+                                 CaretBrush="{DynamicResource Theme.FgPrimary}"
+                                 FontFamily="Consolas"
+                                 FontSize="12"
+                                 AcceptsReturn="True"
+                                 AcceptsTab="True"
+                                 TextWrapping="NoWrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 HorizontalScrollBarVisibility="Auto">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="IsReadOnly" Value="True"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasSelection}" Value="True">
+                                            <Setter Property="IsReadOnly" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- 검증/저장 상태 -->
+                <TextBlock Grid.Row="2"
+                           Text="{Binding ValidationStatus}"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           FontSize="11"
+                           Margin="4,8,0,0"/>
+            </Grid>
+        </Border>
+
+        <!-- ════════ Row 3: 하단 캡션 ════════ -->
+        <TextBlock Grid.Row="3"
+                   Text="kg_node·kg_edge CRUD,  좌측 노드 / 우측 엣지 / 하단 props JSON"
+                   Foreground="{DynamicResource Theme.FgMuted}"
+                   FontSize="11" FontStyle="Italic"
+                   Margin="4,10,0,0"
+                   HorizontalAlignment="Center"/>
+    </Grid>
+</UserControl>
