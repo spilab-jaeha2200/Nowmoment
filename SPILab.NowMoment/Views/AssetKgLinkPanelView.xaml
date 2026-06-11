@@ -1,0 +1,221 @@
+<!-- ════════════════════════════════════════════════════════════
+     AssetKgLinkPanelView.xaml — v4 Phase 6 (라이트 테마 표 형태)
+
+     화면설계서 §4.3 의 KG 노드 연결 섹션을 그대로 구현:
+       헤더행:  "📌 KG 노드 연결 (다대다, asset_kg_link)"   [+ 추가] [전체▼] [🔍 노드]
+       표:     KG 노드 ID | 라벨 | 도메인 | 링크 타입 ▼ | X
+
+     모든 스타일은 EditDialogStyles.xaml 에서 정의된 라이트 테마 키를 참조.
+     ════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.AssetKgLinkPanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+
+    <!-- 외곽 Border: 테두리·배경 제거.
+         이 패널은 자산 편집 다이얼로그(BgCard 영역)와 자산↔KG 링크
+         종합 화면(DetailCard) 안에 임베드되며, 양쪽 모두 바깥에서
+         카드 배경을 제공한다. 따라서 패널이 자체 테두리·배경을 그리면
+         '박스 안의 박스'가 되어 어색하므로 투명 처리한다. -->
+    <Border Background="Transparent" Padding="0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>  <!-- 헤더 -->
+                <RowDefinition Height="Auto"/>  <!-- 후보 선택 행 (자산 저장 후) -->
+                <RowDefinition Height="Auto"/>  <!-- 표 (내용 높이만 - 빈 영역 방지) -->
+                <RowDefinition Height="*"/>     <!-- 미저장 안내문 / 남는 공간 흡수 -->
+            </Grid.RowDefinitions>
+
+            <!-- ───── 1. 헤더 ─────────────────────────────────────── -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Style="{StaticResource DlgSectionHeader}"
+                           Margin="0,0,0,0">
+                    <Run Text="📌"/>
+                    <Run Text=" 지식그래프 노드 연결"/>
+                    <Run Text="  (다대다, asset_kg_link)"
+                         FontWeight="Normal"
+                         FontSize="11"
+                         Foreground="{DynamicResource Theme.FgMuted}"/>
+                </TextBlock>
+
+                <!-- [+ 추가] : 선택된 후보 노드를 자산에 링크 -->
+                <Button Grid.Column="1" Content="+ 추가"
+                        Style="{StaticResource DlgKgSmallBtn}"
+                        Command="{Binding AddLinkCommand}"
+                        Margin="0,0,6,0"
+                        ToolTip="아래 후보 행에서 KG 노드와 링크 타입을 선택한 뒤 클릭"/>
+
+                <!-- 도메인 필터 ComboBox -->
+                <ComboBox Grid.Column="2"
+                          Style="{StaticResource DlgInputCombo}"
+                          ItemsSource="{Binding Domains}"
+                          SelectedItem="{Binding SelectedDomain}"
+                          MinWidth="92" MinHeight="28" FontSize="12"
+                          Margin="0,0,6,0"
+                          ToolTip="도메인으로 KG 후보 필터링"/>
+
+                <!-- [🔍 노드] 검색 리셋 버튼 -->
+                <Button Grid.Column="3" Content="🔍 노드"
+                        Style="{StaticResource DlgKgSmallBtn}"
+                        Command="{Binding OpenNodePickerCommand}"
+                        ToolTip="검색어 초기화 후 전체 노드를 다시 표시"/>
+            </Grid>
+
+            <!-- ───── 2. 후보 선택 행 (저장 후에만 활성) ───────────────── -->
+            <Grid Grid.Row="1" Margin="0,10,0,8"
+                  Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisDlg}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="140"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 노드 후보 + 검색어 입력을 한 줄에 결합 -->
+                <Grid Grid.Column="0" Margin="0,0,8,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ComboBox Grid.Column="0"
+                              Style="{StaticResource DlgInputCombo}"
+                              ItemsSource="{Binding KgNodeCandidates}"
+                              SelectedItem="{Binding SelectedKgNode, Mode=TwoWay}"
+                              Margin="0,0,4,0"
+                              ToolTip="후보 노드 선택">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="["
+                                               Foreground="{DynamicResource Theme.FgMuted}"
+                                               FontFamily="맑은 고딕" FontSize="12"/>
+                                    <TextBlock Text="{Binding Type}"
+                                               Foreground="{DynamicResource Theme.Warning}"
+                                               FontFamily="맑은 고딕" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="] "
+                                               Foreground="{DynamicResource Theme.FgMuted}"
+                                               FontFamily="맑은 고딕" FontSize="12"/>
+                                    <TextBlock Text="{Binding Label}"
+                                               Foreground="{DynamicResource Theme.FgPrimary}"
+                                               FontFamily="맑은 고딕" FontSize="12"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <TextBox Grid.Column="1"
+                             Style="{StaticResource DlgInputBox}"
+                             Text="{Binding KgSearchKeyword, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                             MinHeight="28" FontSize="12"
+                             ToolTip="KG 노드 라벨/ID/속성에서 검색 (비우면 전체)"
+                             Margin="4,0,0,0">
+                        <TextBox.Resources>
+                            <!-- placeholder 흉내: 비어있을 때 옅은 회색 텍스트 -->
+                        </TextBox.Resources>
+                    </TextBox>
+                </Grid>
+
+                <!-- 링크 타입 선택 -->
+                <ComboBox Grid.Column="1"
+                          Style="{StaticResource DlgInputCombo}"
+                          ItemsSource="{Binding LinkTypes}"
+                          SelectedItem="{Binding AddLinkType}"
+                          MinHeight="28" FontSize="12"
+                          ToolTip="추가할 링크 타입"/>
+            </Grid>
+
+            <!-- ───── 3. 표 (KG 노드 ID / 라벨 / 도메인 / 링크 타입 / X) ─── -->
+            <!-- DataGrid 를 Border 로 감싸 사방 테두리를 보장.
+                 DataGrid 자체 BorderThickness 에만 의존하면 행이 적을 때
+                 하단 라인이 그려지지 않는 경우가 있어, 외곽 Border 가
+                 항상 아래쪽 선까지 그리도록 한다. -->
+            <Border Grid.Row="2"
+                    BorderBrush="{DynamicResource Theme.Border}"
+                    BorderThickness="1"
+                    Background="{DynamicResource Theme.BgCard}"
+                    Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisDlg}}">
+            <DataGrid ItemsSource="{Binding Links}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False" CanUserDeleteRows="False"
+                      CanUserReorderColumns="False" CanUserResizeRows="False"
+                      HeadersVisibility="Column"
+                      Background="{DynamicResource Theme.BgCard}"
+                      RowBackground="{DynamicResource Theme.BgCard}"
+                      AlternatingRowBackground="{DynamicResource Theme.BgGridRowOdd}"
+                      Foreground="{DynamicResource Theme.FgPrimary}"
+                      BorderThickness="0"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="{DynamicResource Theme.Border}"
+                      ColumnHeaderStyle="{StaticResource DlgKgGridHeader}"
+                      CellStyle="{StaticResource DlgKgGridCell}"
+                      RowHeight="32"
+                      FontFamily="맑은 고딕" FontSize="12"
+                      MinHeight="120"
+                      Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVisDlg}}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="지식그래프 노드 ID"
+                                        Binding="{Binding NodeId}"
+                                        Width="*"
+                                        IsReadOnly="True"/>
+                    <DataGridTextColumn Header="라벨"
+                                        Binding="{Binding NodeLabel}"
+                                        Width="*"
+                                        IsReadOnly="True"/>
+                    <DataGridTextColumn Header="도메인"
+                                        Binding="{Binding NodeDomain}"
+                                        Width="80"
+                                        IsReadOnly="True"/>
+                    <DataGridTextColumn Header="링크 타입"
+                                        Binding="{Binding LinkType}"
+                                        Width="110"
+                                        IsReadOnly="True"/>
+                    <DataGridTemplateColumn Header="" Width="44">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="✕"
+                                        Style="{StaticResource DlgKgRowDeleteBtn}"
+                                        Command="{Binding DataContext.DeleteLinkCommand,
+                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+            </Border>
+
+            <!-- ───── 4. 미저장/미연결 안내 (IsAvailable=false 일 때) ────────── -->
+            <Border Grid.Row="3"
+                    Background="{DynamicResource Theme.BgGridRowOdd}"
+                    BorderBrush="{DynamicResource Theme.Border}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="28,22"
+                    Margin="0,10,0,0"
+                    Visibility="{Binding IsAvailable, Converter={StaticResource InverseBoolToVis}}">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="⚠"
+                               FontSize="22"
+                               Foreground="{DynamicResource Theme.Warning}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="{Binding UnavailableMessage}"
+                               Foreground="{DynamicResource Theme.FgSecondary}"
+                               FontFamily="맑은 고딕" FontSize="13"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               MaxWidth="440"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

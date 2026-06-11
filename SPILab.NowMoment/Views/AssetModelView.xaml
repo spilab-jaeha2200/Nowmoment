@@ -1,0 +1,185 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/AssetModelView.xaml — AI 모델 / 데이터 관리 화면 (SCR-A02)
+
+     AssetCodeView / AssetDocumentView 와 동일 패턴.
+     모든 색상은 DynamicResource 토큰 → Light/Dark 자동 전환.
+     CRUD 는 AssetModelViewModel 을 통해 v3 MainViewModel 의
+     AddModelCommand / EditModelCommand / DeleteModelCommand 로 패스스루.
+     ════════════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.AssetModelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Theme.BgMain}"
+             FontFamily="맑은 고딕">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 툴바 -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Content="＋ 등록" Style="{StaticResource PrimaryButton}"
+                    Command="{Binding AddCommand}" Margin="0,0,8,0"/>
+            <Button Grid.Column="1" Content="✎ 수정" Style="{StaticResource SecondaryButton}"
+                    Command="{Binding EditCommand}" Margin="0,0,8,0"/>
+            <Button Grid.Column="2" Content="✗ 삭제" Style="{StaticResource SecondaryButton}"
+                    Command="{Binding DeleteCommand}" Margin="0,0,16,0"/>
+
+            <TextBox Grid.Column="3" Style="{StaticResource SearchTextBox}"
+                     Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged, Delay=300}"
+                     MinWidth="280" Margin="0,0,12,0"/>
+
+            <ComboBox Grid.Column="4" Style="{StaticResource FilterCombo}"
+                      ItemsSource="{Binding ProjectFilters}" SelectedItem="{Binding ProjectFilter}"
+                      Margin="0,0,8,0"/>
+            <ComboBox Grid.Column="5" Style="{StaticResource FilterCombo}"
+                      ItemsSource="{Binding FrameworkFilters}" SelectedItem="{Binding FrameworkFilter}"
+                      Margin="0,0,8,0"/>
+
+            <Button Grid.Column="6" Content="🔄 새로고침" Style="{StaticResource SecondaryButton}"
+                    Command="{Binding RefreshCommand}"/>
+        </Grid>
+
+        <!-- DataGrid -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1" CornerRadius="4">
+            <DataGrid x:Name="Grid" Style="{StaticResource V4DataGrid}"
+                      ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                      MouseDoubleClick="OnRowDoubleClick">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="40" MinWidth="40"
+                                            CanUserResize="False">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <CheckBox x:Name="HeaderCheckBox" HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" IsThreeState="False"
+                                          Foreground="{DynamicResource Theme.FgPrimary}"
+                                          Checked="OnHeaderCheckChanged"
+                                          Unchecked="OnHeaderCheckChanged"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="ID"        Binding="{Binding Id}"          Width="60"/>
+                    <DataGridTextColumn Header="모델명"    Binding="{Binding Name}"        Width="3*" MinWidth="180"/>
+                    <DataGridTextColumn Header="프레임워크" Binding="{Binding Framework}"   Width="100"/>
+                    <DataGridTextColumn Header="정확도"    Binding="{Binding AccuracyText}" Width="80"/>
+                    <DataGridTextColumn Header="베이스모델" Binding="{Binding BaseModel}"   Width="2*" MinWidth="120"/>
+                    <DataGridTextColumn Header="프로젝트"  Binding="{Binding ProjectName}" Width="2*" MinWidth="140"/>
+                    <DataGridTextColumn Header="파일경로"  Binding="{Binding FilePath}"    Width="2*" MinWidth="140"/>
+                    <DataGridTextColumn Header="등록일"    Binding="{Binding CreatedAt, StringFormat=yyyy-MM-dd}" Width="100"/>
+                    <DataGridTextColumn Header="수정일"    Binding="{Binding UpdatedAt, StringFormat=yyyy-MM-dd}" Width="100"/>
+
+                    <DataGridTemplateColumn Header="관리" Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="수정" FontSize="11" Padding="8,2" Margin="0,0,4,0"
+                                            Background="{DynamicResource Theme.BgCard}"
+                                            Foreground="{DynamicResource Theme.FgPrimary}"
+                                            BorderBrush="{DynamicResource Theme.Border}"
+                                            BorderThickness="1" Cursor="Hand"
+                                            Command="{Binding DataContext.RowEditCommand,
+                                                              RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding Source}"/>
+                                    <Button Content="삭제" FontSize="11" Padding="8,2"
+                                            Background="{DynamicResource Theme.BgCard}"
+                                            Foreground="{DynamicResource Theme.Error}"
+                                            BorderBrush="{DynamicResource Theme.Error}"
+                                            BorderThickness="1" Cursor="Hand"
+                                            Command="{Binding DataContext.RowDeleteCommand,
+                                                              RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding Source}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="40">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="⋯" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource Theme.FgMuted}" FontSize="14"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- 상세 패널 -->
+        <Border Grid.Row="2" Style="{StaticResource DetailCard}" Margin="0,14,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{Binding DetailTitle}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Accent}"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Content="📑 카탈로그" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding CatalogCommand}" Margin="0,0,8,0"/>
+                    <Button Grid.Column="2" Content="📤 내보내기" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ExportCommand}"/>
+                </Grid>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,4">
+                    <TextBlock Text="모델명: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailName}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12" Margin="0,0,24,0"/>
+                    <TextBlock Text="프레임워크: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailFramework}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12" Margin="0,0,24,0"/>
+                    <TextBlock Text="정확도: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailAccuracy}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12" Margin="0,0,24,0"/>
+                    <TextBlock Text="프로젝트: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailProject}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,4">
+                    <TextBlock Text="베이스모델: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailBaseModel}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12" Margin="0,0,24,0"/>
+                    <TextBlock Text="파일경로: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailFilePath}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"
+                               TextTrimming="CharacterEllipsis" MaxWidth="600"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock Text="설명: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailDescription}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"
+                               TextWrapping="Wrap" MaxWidth="900"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <TextBlock Grid.Row="3" Text="{Binding SelectionSummary}"
+                   Foreground="{DynamicResource Theme.FgMuted}" FontSize="11" Margin="4,8,0,0"/>
+    </Grid>
+</UserControl>

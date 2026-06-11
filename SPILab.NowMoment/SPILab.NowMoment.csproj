@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>SPILab.NowMoment</AssemblyName>
+    <RootNamespace>SPILab.NowMoment</RootNamespace>
+    <Nullable>enable</Nullable>
+
+    <!-- v4.1: 어셈블리 버전 + 파일 정보 -->
+    <Version>4.1.0</Version>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <FileVersion>4.1.0.0</FileVersion>
+    <InformationalVersion>4.1.0</InformationalVersion>
+    <Product>NowMoment</Product>
+    <AssemblyTitle>NowMoment</AssemblyTitle>
+    <Description>NowMoment — 기술자산관리 시스템 (v4.1, Core 분리)</Description>
+    <Company>SPILab Co., Ltd.</Company>
+    <Copyright>Copyright © SPILab Co., Ltd. 2026</Copyright>
+
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="dotNetRDF" Version="3.2.1" />
+    <!-- v3.0 F-004: PDF 카탈로그 생성 -->
+    <!-- Community 라이선스 (MIT, 매출 100만 USD 미만 무료) -->
+    <PackageReference Include="QuestPDF" Version="2024.12.0" />
+    <!-- v4.0: Excel 내보내기 (LGPL — 동적 링킹 OK) -->
+    <PackageReference Include="ClosedXML" Version="0.104.1" />
+    <!-- v4.0: NavigationView (Phase 3에서 MainWindow 전환 시 사용) -->
+    <PackageReference Include="ModernWpfUI" Version="0.9.6" />
+  </ItemGroup>
+
+  <!-- kg_builder 폴더는 KG 빌더 입력/산출물 보관용 (Python + 메타 .cs).
+       NowMoment 앱 컴파일 대상이 아니므로 제외하여 PhotoEngineMeta.cs 가
+       이중 정의 충돌(CS0101)을 일으키지 않도록 한다.
+
+       ★ v4.1: kg_builder/ 는 "SPILab Core 페이로드" 이다 (개선계획서 2.2).
+         - 내부 개발본 / 내부 인스톨러 : kg_builder/ 포함
+         - 외부 배포본               : kg_builder/ 제외 (build-installer-EXT 가 처리)
+         CoreProviderLoader 가 폴더 존재로 Core 유무를 판정하므로,
+         폴더를 빼는 것만으로 외부본에서 KG 빌드가 안전하게 비활성화된다. -->
+  <ItemGroup>
+    <Compile Remove="kg_builder\**\*.cs" />
+    <None    Remove="kg_builder\**\*" />
+  </ItemGroup>
+
+  <!-- ★ v4.1 Phase 2 마무리 (계획서 2.2 C4 — 분류 휴리스틱 분리):
+       kg_builder/classifier/AssetClassifierCore.cs 는 자산 분류
+       휴리스틱(마커별 신뢰도 매트릭스·임계값) = C4 IP 이다.
+
+       위 ItemGroup 이 kg_builder\**\*.cs 를 전부 제외했으므로, 여기서
+       classifier 폴더의 .cs 만 다시 컴파일에 포함한다. 이 폴더가
+       존재할 때만(=내부 빌드) 포함되며, CORE_PAYLOAD 심볼을 정의해
+       CoreProviderLoader 가 AssetClassifierCore 를 직접 참조할 수 있게 한다.
+
+       외부 배포본은 build-installer-EXT.bat 가 kg_builder/ 를 통째로
+       삭제하므로 이 Include 가 0개 파일을 잡고 CORE_PAYLOAD 도
+       정의되지 않는다 → 빌드는 AssetClassifierFallback 으로 폴백한다.
+       (Condition: classifier 폴더 존재 여부로 자동 분기) -->
+  <PropertyGroup Condition="Exists('kg_builder\classifier')">
+    <DefineConstants>$(DefineConstants);CORE_PAYLOAD</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('kg_builder\classifier')">
+    <Compile Include="kg_builder\classifier\*.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,316 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/KgGraphViewerView.xaml — 그래프 시각화 화면 (SCR-B04)
+
+     구조 (Image 1 1:1):
+       Col 0 (240px): 필터 패널
+         - 도메인 체크박스 (단일 선택 라디오 동작)
+         - 노드 타입 체크박스 (개수 함께 표시)
+         - 표시 옵션 (라벨 표시 / 엣지 라벨 / 고립 노드)
+         - 노드 크기 모드 (콤보)
+         - 레이아웃 리셋 버튼
+       Col 1 (*): 그래프 영역
+         - 헤더: 그래프 (도메인) + 줌+ / 줌- / PNG
+         - v3 KgGraphView UserControl 임베드 (force-directed 렌더링)
+       Col 2 (280px): 선택 노드 패널
+         - 헤더 + 메타 (라벨, 차수, props 핵심 2개)
+         - 연결 자산 카드 리스트
+         - 노드 편집 버튼 (v3 EditNodeCommand)
+
+     CRUD/렌더링은 모두 v3 KgViewModel + KgGraphView 가 처리.
+     ════════════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.KgGraphViewerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:SPILab.NowMoment.Views"
+             Background="{DynamicResource Theme.BgMain}"
+             FontFamily="맑은 고딕">
+
+    <Grid Margin="16,16,16,12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220"/>   <!-- 좌측 필터 -->
+            <ColumnDefinition Width="12"/>
+            <ColumnDefinition Width="*"/>     <!-- 중앙 그래프 -->
+            <ColumnDefinition Width="12"/>
+            <ColumnDefinition Width="280"/>   <!-- 우측 선택 노드 -->
+        </Grid.ColumnDefinitions>
+
+        <!-- ════════ Col 0: 필터 패널 ════════ -->
+        <Border Grid.Column="0" Style="{StaticResource DetailCard}" Padding="14,12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- 헤더 -->
+                    <TextBlock Text="🪄 필터"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Accent}"
+                               Margin="0,0,0,10"/>
+
+                    <!-- 도메인 -->
+                    <TextBlock Text="도메인"
+                               Foreground="{DynamicResource Theme.FgMuted}"
+                               FontSize="12" FontWeight="Bold"
+                               Margin="0,4,0,4"/>
+                    <ItemsControl ItemsSource="{Binding DomainFilters}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                              VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               Foreground="{DynamicResource Theme.FgPrimary}"
+                                               FontSize="12"
+                                               VerticalAlignment="Center"
+                                               Margin="6,0,0,0"/>
+                                    <!-- 활성 도메인 표시 점 -->
+                                    <Ellipse Width="8" Height="8" Margin="6,0,0,0"
+                                             VerticalAlignment="Center">
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Fill" Value="Transparent"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsChecked}" Value="True">
+                                                        <Setter Property="Fill" Value="{DynamicResource Theme.Accent}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 노드 타입 -->
+                    <TextBlock Text="노드 타입"
+                               Foreground="{DynamicResource Theme.FgMuted}"
+                               FontSize="12" FontWeight="Bold"
+                               Margin="0,14,0,4"/>
+                    <ItemsControl ItemsSource="{Binding NodeTypeFilters}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                              VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               Foreground="{DynamicResource Theme.FgPrimary}"
+                                               FontSize="12"
+                                               VerticalAlignment="Center"
+                                               Margin="6,0,0,0"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 표시 옵션 -->
+                    <TextBlock Text="표시 옵션"
+                               Foreground="{DynamicResource Theme.FgMuted}"
+                               FontSize="12" FontWeight="Bold"
+                               Margin="0,14,0,4"/>
+                    <CheckBox Content="라벨 표시"
+                              IsChecked="{Binding ShowLabels, Mode=TwoWay}"
+                              Foreground="{DynamicResource Theme.FgPrimary}"
+                              FontSize="12" Margin="0,2"/>
+                    <CheckBox Content="엣지 라벨"
+                              IsChecked="{Binding ShowEdgeLabels, Mode=TwoWay}"
+                              Foreground="{DynamicResource Theme.FgPrimary}"
+                              FontSize="12" Margin="0,2"/>
+                    <CheckBox Content="고립 노드"
+                              IsChecked="{Binding ShowIsolated, Mode=TwoWay}"
+                              Foreground="{DynamicResource Theme.FgPrimary}"
+                              FontSize="12" Margin="0,2"/>
+
+                    <!-- 노드 크기 -->
+                    <TextBlock Text="노드 크기"
+                               Foreground="{DynamicResource Theme.FgMuted}"
+                               FontSize="12" FontWeight="Bold"
+                               Margin="0,14,0,4"/>
+                    <ComboBox Style="{StaticResource FilterCombo}"
+                              ItemsSource="{Binding NodeSizeModes}"
+                              SelectedItem="{Binding NodeSizeMode, Mode=TwoWay}"
+                              HorizontalAlignment="Stretch"/>
+
+                    <!-- 레이아웃 리셋 -->
+                    <Button Content="↺ 레이아웃 리셋"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding RelayoutRequestCommand}"
+                            Margin="0,18,0,0"
+                            HorizontalAlignment="Stretch"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ════════ Col 2: 그래프 영역 ════════ -->
+        <Border Grid.Column="2" Style="{StaticResource DetailCard}" Padding="14,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- 헤더 -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="🕸 그래프"
+                                   FontSize="14" FontWeight="Bold"
+                                   Foreground="{DynamicResource Theme.Accent}"/>
+                        <TextBlock Text="{Binding Kg.SelectedDomainLabel, StringFormat='  ({0} 도메인)', FallbackValue=''}"
+                                   FontSize="12" Margin="6,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Theme.FgMuted}"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1" Content="🔍+"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ZoomInRequestCommand}"
+                            Margin="0,0,6,0"
+                            ToolTip="확대"/>
+                    <Button Grid.Column="2" Content="🔍−"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ZoomOutRequestCommand}"
+                            Margin="0,0,6,0"
+                            ToolTip="축소"/>
+                    <Button Grid.Column="3" Content="📷 PNG"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ExportPngRequestCommand}"
+                            ToolTip="현재 그래프를 PNG 파일로 저장"/>
+                </Grid>
+
+                <!-- v3 KgGraphView 임베드: KgGraphViewerViewModel.Kg (= KgViewModel) 를 DataContext 로 전달 -->
+                <Border Grid.Row="1"
+                        BorderBrush="{DynamicResource Theme.Border}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Background="{DynamicResource Theme.BgCard}">
+                    <views:KgGraphView x:Name="EmbeddedGraph"
+                                       DataContext="{Binding Kg}"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ════════ Col 4: 선택 노드 패널 ════════ -->
+        <Border Grid.Column="4" Style="{StaticResource DetailCard}" Padding="14,12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="📌 선택 노드"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Accent}"
+                               Margin="0,0,0,10"/>
+
+                    <!-- 헤더 박스: ID + 타입/도메인 -->
+                    <Border Background="{DynamicResource Theme.BgSidebar}"
+                            BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                            CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="{Binding HeaderTitle}"
+                                       FontFamily="Consolas" FontSize="14" FontWeight="Bold"
+                                       Foreground="{DynamicResource Theme.FgPrimary}"/>
+                            <TextBlock Text="{Binding HeaderSubtitle}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource Theme.FgMuted}"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 메타 라인 -->
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="라벨"
+                                   Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                        <TextBlock Grid.Column="1" Text="{Binding DetailLabel}"
+                                   Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"
+                                   TextWrapping="Wrap"/>
+                    </Grid>
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="차수"
+                                   Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                        <TextBlock Grid.Column="1" Text="{Binding DetailDegree}"
+                                   Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"/>
+                    </Grid>
+                    <!-- props 핵심 2개 -->
+                    <Grid Margin="0,0,0,4"
+                          Visibility="{Binding HasProp1, Converter={StaticResource BoolToVisDlg}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding DetailPropKey1Name}"
+                                   Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"
+                                   FontFamily="Consolas"/>
+                        <TextBlock Grid.Column="1" Text="{Binding DetailPropKey1Value}"
+                                   Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"
+                                   FontFamily="Consolas"/>
+                    </Grid>
+                    <Grid Margin="0,0,0,4"
+                          Visibility="{Binding HasProp2, Converter={StaticResource BoolToVisDlg}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding DetailPropKey2Name}"
+                                   Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"
+                                   FontFamily="Consolas"/>
+                        <TextBlock Grid.Column="1" Text="{Binding DetailPropKey2Value}"
+                                   Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"
+                                   FontFamily="Consolas"/>
+                    </Grid>
+
+                    <!-- 연결 자산 -->
+                    <TextBlock Text="{Binding LinkedAssetsHeader}"
+                               Foreground="{DynamicResource Theme.FgMuted}"
+                               FontSize="12" FontWeight="Bold"
+                               Margin="0,14,0,6"/>
+                    <ItemsControl ItemsSource="{Binding LinkedAssets}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource Theme.BgSidebar}"
+                                        BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                                        CornerRadius="4" Padding="8,6" Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Icon}"
+                                                   FontSize="16" VerticalAlignment="Center"
+                                                   Margin="0,0,8,0"/>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding AssetName}"
+                                                       Foreground="{DynamicResource Theme.FgPrimary}"
+                                                       FontSize="12"
+                                                       FontFamily="Consolas"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding LinkType}"
+                                                       Foreground="{DynamicResource Theme.Cyan}"
+                                                       FontSize="11"
+                                                       FontStyle="Italic"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 노드 편집 버튼 -->
+                    <Button Content="✎ 노드 편집"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding EditNodeCommand}"
+                            Margin="0,16,0,0"
+                            HorizontalAlignment="Stretch"
+                            ToolTip="v3 KgNodeEditDialog 를 열어 선택 노드를 수정"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

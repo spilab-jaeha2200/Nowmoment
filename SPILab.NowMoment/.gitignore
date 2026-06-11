@@ -1,0 +1,22 @@
+# ---- .NET build output ----
+bin/
+obj/
+*.user
+
+# ---- Secrets / private keys (NEVER commit) ----
+*.key
+sign_ed25519.pub
+
+# Core access registry (contains password hashes & PII)
+**/build_pipeline/core_access.json
+**/build_pipeline/core_access.json.bak
+
+# ---- Build pipeline artifacts ----
+**/build_pipeline/build_out/
+*.pyd
+*.enc
+*.spc
+
+# ---- Misc ----
+*.zip
+publish_log.txt

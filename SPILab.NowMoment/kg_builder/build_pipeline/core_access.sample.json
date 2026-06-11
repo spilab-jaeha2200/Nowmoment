@@ -1,0 +1,40 @@
+{
+  "schema": "1.0",
+  "entries": [
+    {
+      "employeeId": "SPL-001",
+      "displayName": "홍길동",
+      "role": "CoreOwner",
+      "pbkdf2": {
+        "salt": "CEU5v5GMfSztuzhrWIv+0Q==",
+        "hash": "LI6jXkQsnqgjDJV+fLmXVtVRkljjbfuQaArRT4NrNt0=",
+        "iterations": 200000
+      }
+    },
+    {
+      "employeeId": "SPL-010",
+      "displayName": "이코어",
+      "role": "CoreDeveloper",
+      "pbkdf2": {
+        "salt": "ZZSiZBUMBnru9GhL3Sb5fA==",
+        "hash": "qCFXWrHhihm1nmQ2SoVpp+uIf/2cccr4hGH9LlfrUqc=",
+        "iterations": 200000
+      }
+    },
+    {
+      "employeeId": "SPL-042",
+      "displayName": "김개발",
+      "role": "CoreRunner",
+      "pbkdf2": {
+        "salt": "i6BOZMN8REA4JsmxG9puRw==",
+        "hash": "8s28mLtWAj2ZnCiyHDx2pkbIILrwsbdgVE443Z62uHw=",
+        "iterations": 200000
+      }
+    },
+    {
+      "employeeId": "SPL-099",
+      "displayName": "박외부",
+      "role": "ShellOnly"
+    }
+  ]
+}

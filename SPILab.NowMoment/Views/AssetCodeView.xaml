@@ -1,0 +1,486 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/AssetCodeView.xaml — 소스코드/모듈 관리 화면 (SCR-A01)
+
+     구조 (이미지 1:1):
+       Row 0: 툴바 (등록 / 수정 / 삭제 | 검색 | 프로젝트 ▼ | 태그 ▼ | 새로고침)
+       Row 1: DataGrid (체크박스, ID, 자산명, 언어, 버전, 프로젝트, 태그, 등록일, 수정일)
+       Row 2: 상세 패널 (제목 + [카탈로그] [내보내기] | 자산 메타 | 연결 KG 노드)
+
+     테마 키: latest App.xaml 의 Theme.* 키 사용 → Light/Dark 자동 전환
+     공유 스타일은 본 UserControl 내부 Resources 로 자기완결 정의
+     ════════════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.AssetCodeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Theme.BgMain}"
+             FontFamily="맑은 고딕">
+
+    <UserControl.Resources>
+        <!-- ════════════════════════════════════════════════════════
+             로컬 스타일 정의 (다른 화면에 영향 없음)
+             글로벌 공유로 승격하려면 App.xaml 로 이동 가능
+             ════════════════════════════════════════════════════════ -->
+
+        <!-- 주 액션 버튼 ([＋ 등록]) -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background"     Value="{DynamicResource Theme.Accent}"/>
+            <Setter Property="Foreground"     Value="{DynamicResource Theme.FgOnAccent}"/>
+            <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Accent}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"        Value="14,6"/>
+            <Setter Property="FontSize"       Value="12"/>
+            <Setter Property="Cursor"         Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Theme.AccentDark}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Theme.BgDisabled}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Theme.Border}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Theme.FgMuted}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 보조 버튼 ([✎ 수정] [✗ 삭제] [새로고침] 등) -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background"     Value="{DynamicResource Theme.BgCard}"/>
+            <Setter Property="Foreground"     Value="{DynamicResource Theme.FgPrimary}"/>
+            <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"        Value="12,6"/>
+            <Setter Property="FontSize"       Value="12"/>
+            <Setter Property="Cursor"         Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Theme.BgHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource Theme.FgMuted}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 검색 텍스트박스 -->
+        <Style x:Key="SearchTextBox" TargetType="TextBox">
+            <Setter Property="Background"     Value="{DynamicResource Theme.BgCard}"/>
+            <Setter Property="Foreground"     Value="{DynamicResource Theme.FgPrimary}"/>
+            <Setter Property="CaretBrush"     Value="{DynamicResource Theme.FgPrimary}"/>
+            <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"        Value="10,6"/>
+            <Setter Property="FontSize"       Value="12"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 필터 콤보 (프로젝트/태그) -->
+        <Style x:Key="FilterComboItem" TargetType="ComboBoxItem">
+            <Setter Property="Background"  Value="{DynamicResource Theme.BgCard}"/>
+            <Setter Property="Foreground"  Value="{DynamicResource Theme.FgPrimary}"/>
+            <Setter Property="FontSize"    Value="12"/>
+            <Setter Property="Padding"     Value="10,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter TextElement.Foreground="{DynamicResource Theme.FgPrimary}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{DynamicResource Theme.BgHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{DynamicResource Theme.BgHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{DynamicResource Theme.BgSelected}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FilterCombo" TargetType="ComboBox">
+            <Setter Property="Background"     Value="{DynamicResource Theme.BgCard}"/>
+            <Setter Property="Foreground"     Value="{DynamicResource Theme.FgPrimary}"/>
+            <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"        Value="10,4"/>
+            <Setter Property="FontSize"       Value="12"/>
+            <Setter Property="MinWidth"       Value="140"/>
+            <Setter Property="MinHeight"      Value="30"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource FilterComboItem}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                                      RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="Bd"
+                                                Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                BorderThickness="1" CornerRadius="3">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="22"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Path Grid.Column="1"
+                                                      Data="M 0 0 L 4 4 L 8 0 Z"
+                                                      Fill="{DynamicResource Theme.FgSecondary}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="BorderBrush"
+                                                        Value="{DynamicResource Theme.Cyan}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter Margin="10,0,26,0"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              VerticalAlignment="Center" HorizontalAlignment="Left"
+                                              TextElement.Foreground="{DynamicResource Theme.FgPrimary}"
+                                              TextElement.FontSize="12"
+                                              IsHitTestVisible="False"/>
+                            <Popup Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True" PopupAnimation="Slide" Focusable="False">
+                                <Border Background="{DynamicResource Theme.BgCard}"
+                                        BorderBrush="{DynamicResource Theme.Border}"
+                                        BorderThickness="1" CornerRadius="3"
+                                        MinWidth="{TemplateBinding ActualWidth}" MaxHeight="320">
+                                    <ScrollViewer SnapsToDevicePixels="True">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- v4 DataGrid 표준 스타일은 전역 Views/Themes/AssetCommonStyles.xaml 의
+             V4DataGrid 를 사용한다 (헤더 ControlTemplate / IsReadOnly 포함).
+             로컬 중복 정의를 제거하여 다른 자산 화면과 완전히 동일하게 통일. -->
+
+        <!-- 상세 패널 카드 -->
+        <Style x:Key="DetailCard" TargetType="Border">
+            <Setter Property="Background"      Value="{DynamicResource Theme.BgCard}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource Theme.Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="6"/>
+            <Setter Property="Padding"         Value="16,12"/>
+        </Style>
+
+        <!-- KG 노드 링크 텍스트 (상세 패널 하단) -->
+        <Style x:Key="KgLinkText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Theme.Cyan}"/>
+            <Setter Property="FontSize"   Value="12"/>
+            <Setter Property="Margin"     Value="0,0,12,0"/>
+            <Setter Property="Cursor"     Value="Hand"/>
+        </Style>
+
+        <!-- DataGrid 컬럼 헤더 스타일 (전역 적용용) -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background"     Value="{DynamicResource Theme.BgCard}"/>
+            <Setter Property="Foreground"     Value="{DynamicResource Theme.FgPrimary}"/>
+            <Setter Property="BorderBrush"    Value="{DynamicResource Theme.Border}"/>
+            <Setter Property="BorderThickness" Value="0,0,1,2"/>
+            <Setter Property="Padding"        Value="10,6"/>
+            <Setter Property="FontWeight"     Value="SemiBold"/>
+            <Setter Property="FontSize"       Value="12"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment"   Value="Center"/>
+            <Setter Property="MinHeight"      Value="36"/>
+            <!-- ControlTemplate 없으면 일부 WPF 테마에서 Background Setter 가 무시되어
+                 헤더가 투명/흰색으로 보이지 않음. 아래 템플릿으로 적용을 강제. -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridColumnHeader">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                <ContentPresenter
+                                    Margin="{TemplateBinding Padding}"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <Thumb x:Name="PART_RightHeaderGripper"
+                                   HorizontalAlignment="Right"
+                                   Width="6" Cursor="SizeWE"
+                                   Opacity="0">
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Border Background="Transparent"/>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- 툴바 -->
+            <RowDefinition Height="*"/>      <!-- 그리드 -->
+            <RowDefinition Height="Auto"/>   <!-- 상세 패널 -->
+            <RowDefinition Height="Auto"/>   <!-- 화면 하단 요약 -->
+        </Grid.RowDefinitions>
+
+        <!-- ════════ 툴바 ════════ -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Content="＋ 등록"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding AddCommand}"
+                    Margin="0,0,8,0"/>
+            <Button Grid.Column="1" Content="✎ 수정"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding EditCommand}"
+                    Margin="0,0,8,0"/>
+            <Button Grid.Column="2" Content="✗ 삭제"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding DeleteCommand}"
+                    Margin="0,0,16,0"/>
+
+            <TextBox Grid.Column="3"
+                     Style="{StaticResource SearchTextBox}"
+                     Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged, Delay=300}"
+                     MinWidth="280"
+                     Margin="0,0,12,0"/>
+
+            <ComboBox Grid.Column="4"
+                      Style="{StaticResource FilterCombo}"
+                      ItemsSource="{Binding ProjectFilters}"
+                      SelectedItem="{Binding ProjectFilter}"
+                      Margin="0,0,8,0"/>
+
+            <ComboBox Grid.Column="5"
+                      Style="{StaticResource FilterCombo}"
+                      ItemsSource="{Binding TagFilters}"
+                      SelectedItem="{Binding TagFilter}"
+                      Margin="0,0,8,0"/>
+
+            <Button Grid.Column="6" Content="🔄 새로고침"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding RefreshCommand}"/>
+        </Grid>
+
+        <!-- ════════ DataGrid ════════ -->
+        <Border Grid.Row="1"
+                BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                CornerRadius="4">
+            <DataGrid x:Name="Grid"
+                      Style="{StaticResource V4DataGrid}"
+                      ItemsSource="{Binding Rows}"
+                      SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                      MouseDoubleClick="OnRowDoubleClick">
+                <DataGrid.Columns>
+                    <!-- 체크박스 -->
+                    <DataGridTemplateColumn Width="40">
+                        <DataGridTemplateColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <CheckBox x:Name="HeaderCheckBox" HorizontalAlignment="Center" IsThreeState="False"
+                                          Foreground="{DynamicResource Theme.FgPrimary}"
+                                          Checked="OnHeaderCheckChanged"
+                                          Unchecked="OnHeaderCheckChanged"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.HeaderTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="ID"      Binding="{Binding Id}"          Width="60"/>
+                    <DataGridTextColumn Header="자산명"  Binding="{Binding Name}"        Width="2*" MinWidth="180"/>
+                    <DataGridTextColumn Header="언어"    Binding="{Binding Language}"    Width="100"/>
+                    <DataGridTextColumn Header="버전"    Binding="{Binding Version}"     Width="90"/>
+                    <DataGridTextColumn Header="프로젝트" Binding="{Binding ProjectName}" Width="2*" MinWidth="180"/>
+                    <DataGridTextColumn Header="태그"    Binding="{Binding Tags}"        Width="2*" MinWidth="150"/>
+                    <DataGridTextColumn Header="등록일"  Binding="{Binding CreatedAt, StringFormat=yyyy-MM-dd}" Width="110"/>
+                    <DataGridTextColumn Header="수정일"  Binding="{Binding UpdatedAt, StringFormat=yyyy-MM-dd}" Width="110"/>
+
+                    <!-- 행별 [수정]/[삭제] 버튼 (v3 와 동일 패턴) -->
+                    <DataGridTemplateColumn Header="관리" Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="수정"
+                                            FontSize="11" Padding="8,2"
+                                            Margin="0,0,4,0"
+                                            Background="{DynamicResource Theme.BgCard}"
+                                            Foreground="{DynamicResource Theme.FgPrimary}"
+                                            BorderBrush="{DynamicResource Theme.Border}"
+                                            BorderThickness="1"
+                                            Cursor="Hand"
+                                            Command="{Binding DataContext.RowEditCommand,
+                                                              RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding Source}"/>
+                                    <Button Content="삭제"
+                                            FontSize="11" Padding="8,2"
+                                            Background="{DynamicResource Theme.BgCard}"
+                                            Foreground="{DynamicResource Theme.Error}"
+                                            BorderBrush="{DynamicResource Theme.Error}"
+                                            BorderThickness="1"
+                                            Cursor="Hand"
+                                            Command="{Binding DataContext.RowDeleteCommand,
+                                                              RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding Source}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="40">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="⋯" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource Theme.FgMuted}"
+                                           FontSize="14"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- ════════ 상세 패널 ════════ -->
+        <Border Grid.Row="2" Style="{StaticResource DetailCard}" Margin="0,14,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- 헤더 라인: 제목 + 우측 액션 -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding DetailTitle}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Accent}"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Content="📑 카탈로그"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding CatalogCommand}"
+                            Margin="0,0,8,0"/>
+                    <Button Grid.Column="2" Content="📤 내보내기"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ExportCommand}"/>
+                </Grid>
+
+                <!-- 메타 라인 1 -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,4">
+                    <TextBlock Text="자산명: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailName}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12" Margin="0,0,24,0"/>
+                    <TextBlock Text="언어: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailLanguage}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12" Margin="0,0,24,0"/>
+                    <TextBlock Text="버전: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailVersion}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12" Margin="0,0,24,0"/>
+                    <TextBlock Text="프로젝트: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailProject}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"/>
+                </StackPanel>
+
+                <!-- 메타 라인 2 -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,4">
+                    <TextBlock Text="저장소: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailRepo}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12" Margin="0,0,24,0"
+                               TextTrimming="CharacterEllipsis" MaxWidth="420"/>
+                    <TextBlock Text="라이선스: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                    <TextBlock Text="{Binding DetailLicense}" Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"/>
+                </StackPanel>
+
+                <!-- 설명 + KG 노드 링크 -->
+                <StackPanel Grid.Row="3" Margin="0,6,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="설명: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"/>
+                        <TextBlock Text="{Binding DetailDescription}"
+                                   Foreground="{DynamicResource Theme.FgPrimary}" FontSize="12"
+                                   TextWrapping="Wrap" MaxWidth="900"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBlock Text="연결 KG 노드: " Foreground="{DynamicResource Theme.FgMuted}" FontSize="12" Margin="0,0,8,0"/>
+                        <!-- KG 매핑 표시는 자리 표시자 - asset_kg_link 통합 시 ItemsControl 로 교체 -->
+                        <TextBlock Text="cs:Loader (implements)" Style="{StaticResource KgLinkText}"/>
+                        <TextBlock Text="cs:DataModel (uses)"     Style="{StaticResource KgLinkText}"/>
+                        <TextBlock Text="cs:GaNRule (derived_from)" Style="{StaticResource KgLinkText}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ════════ 화면 하단 요약 (선택 갯수) ════════ -->
+        <TextBlock Grid.Row="3"
+                   Text="{Binding SelectionSummary}"
+                   Foreground="{DynamicResource Theme.FgMuted}"
+                   FontSize="11"
+                   Margin="4,8,0,0"/>
+    </Grid>
+</UserControl>

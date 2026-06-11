@@ -1,0 +1,533 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Views/FolderImportPanelView.xaml — 폴더 임포트 인라인 화면 (SCR-D01)
+
+     Image 1 구조:
+       Row 0: 3단계 진행 인디케이터 (① 폴더 선택·스캔  ② 분류 결과 확인  ③ 커밋)
+       Row 1: 단계별 본문
+              - Step 1 (SelectFolder/Scanning): 폴더 선택 + 프로젝트 + 스캔 버튼
+              - Step 2 (Preview): 스캔 완료 배너 + 후보 DataGrid + 일괄 재지정/충돌 해결
+              - Step 3 (Done): 커밋 결과 요약
+       Row 2: 풋터 버튼 (◀ 이전 / 취소 / 다음 ▶ 또는 ✅ 커밋)
+
+     모든 색상: Theme.* 토큰 → 라이트/다크 자동 전환.
+     CRUD/스캔/커밋은 v3 FolderImportViewModel 패스스루.
+     ════════════════════════════════════════════════════════════════════ -->
+<UserControl x:Class="SPILab.NowMoment.Views.FolderImportPanelView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Theme.BgMain}"
+             FontFamily="맑은 고딕">
+
+    <Grid Margin="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ════════ Row 0: 3단계 진행 인디케이터 ════════ -->
+        <Border Grid.Row="0" Style="{StaticResource DetailCard}" Padding="18,16" Margin="0,0,0,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="60"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 단계 1: 폴더 선택·스캔 -->
+                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                    <Border Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Center">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{DynamicResource Theme.BgDisabled}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Step1Done}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource Theme.Success}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Step1Active}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource Theme.Accent}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center"
+                                   Foreground="White" FontWeight="Bold" FontSize="15">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="1"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Step1Done}" Value="True">
+                                            <Setter Property="Text" Value="✓"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <TextBlock Text="폴더 선택·스캔"
+                               FontSize="12" Margin="0,8,0,0"
+                               HorizontalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource Theme.FgMuted}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Step1Active}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Theme.Accent}"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Step1Done}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Theme.Success}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <Rectangle Grid.Column="1" Height="2" VerticalAlignment="Center"
+                           Fill="{DynamicResource Theme.Border}" Margin="4,0"/>
+
+                <!-- 단계 2: 분류 결과 확인 -->
+                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                    <Border Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Center">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{DynamicResource Theme.BgDisabled}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Step2Done}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource Theme.Success}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Step2Active}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource Theme.Accent}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center"
+                                   Foreground="White" FontWeight="Bold" FontSize="15">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="2"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Step2Done}" Value="True">
+                                            <Setter Property="Text" Value="✓"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+                    <TextBlock Text="분류 결과 확인"
+                               FontSize="12" Margin="0,8,0,0"
+                               HorizontalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource Theme.FgMuted}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Step2Active}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Theme.Accent}"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Step2Done}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Theme.Success}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <Rectangle Grid.Column="3" Height="2" VerticalAlignment="Center"
+                           Fill="{DynamicResource Theme.Border}" Margin="4,0"/>
+
+                <!-- 단계 3: 커밋 -->
+                <StackPanel Grid.Column="4" HorizontalAlignment="Center">
+                    <Border Width="40" Height="40" CornerRadius="20" HorizontalAlignment="Center">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{DynamicResource Theme.BgDisabled}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Step3Active}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource Theme.Success}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="3" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                   Foreground="White" FontWeight="Bold" FontSize="15"/>
+                    </Border>
+                    <TextBlock Text="커밋"
+                               FontSize="12" Margin="0,8,0,0"
+                               HorizontalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource Theme.FgMuted}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Step3Active}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Theme.Success}"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ════════ Row 1: 단계별 본문 ════════ -->
+        <Grid Grid.Row="1">
+
+            <!-- ━━ Step 1: 폴더 선택·스캔 ━━ -->
+            <Border Padding="20,18">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource DetailCard}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Step1Active}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel>
+                    <TextBlock Text="📁 폴더 선택"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Accent}"
+                               Margin="0,0,0,14"/>
+
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="루트 폴더"
+                                   Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"
+                                   VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding RootPath, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="{DynamicResource Theme.BgCard}"
+                                 Foreground="{DynamicResource Theme.FgPrimary}"
+                                 BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                                 CaretBrush="{DynamicResource Theme.FgPrimary}"
+                                 FontFamily="맑은 고딕" FontSize="12"
+                                 Padding="8,6"/>
+                        <Button Grid.Column="2" Content="📂 찾아보기..."
+                                Style="{StaticResource SecondaryButton}"
+                                Command="{Binding BrowseRootCommand}"
+                                Margin="8,0,0,0"/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="프로젝트"
+                                   Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"
+                                   VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1"
+                                  Style="{StaticResource FilterCombo}"
+                                  ItemsSource="{Binding Projects}"
+                                  DisplayMemberPath="Name"
+                                  SelectedItem="{Binding SelectedProject, Mode=TwoWay}"
+                                  HorizontalAlignment="Stretch"/>
+                    </Grid>
+
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Foreground="{DynamicResource Theme.Cyan}"
+                               FontSize="11" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ━━ Step Scanning: 진행 표시 ━━ -->
+            <Border Padding="20,18">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource DetailCard}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsScanning}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="🔍 스캔 중..."
+                               FontSize="18" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Accent}"
+                               HorizontalAlignment="Center"
+                               Margin="0,40,0,12"/>
+                    <ProgressBar IsIndeterminate="True" Height="6" Width="400"
+                                 Foreground="{DynamicResource Theme.Accent}"
+                                 Background="{DynamicResource Theme.BgDisabled}"/>
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Foreground="{DynamicResource Theme.FgMuted}" FontSize="12"
+                               HorizontalAlignment="Center"
+                               Margin="0,12,0,0"/>
+                    <TextBlock FontSize="11" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource Theme.FgMuted}"
+                               Margin="0,4,0,0"
+                               Text="{Binding ScannedCount, StringFormat='검사한 파일 {0}개'}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ━━ Step 2: Preview ━━ -->
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsPreview}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- 스캔 완료 배너 (녹색) -->
+                <Border Grid.Row="0"
+                        Background="#E6F4E8"
+                        BorderBrush="#4CAF72" BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="14,10"
+                        Margin="0,0,0,12">
+                    <TextBlock Text="{Binding CompletedScanLabel}"
+                               Foreground="#1B5E20"
+                               FontSize="13" FontWeight="Bold"/>
+                </Border>
+
+                <!-- 필터/일괄 작업 툴바 -->
+                <Grid Grid.Row="1" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding PreviewCountLabel}"
+                               Foreground="{DynamicResource Theme.FgPrimary}"
+                               FontSize="13" FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+
+                    <ComboBox Grid.Column="2"
+                              Style="{StaticResource FilterCombo}"
+                              ItemsSource="{Binding FilterKindOptions}"
+                              SelectedItem="{Binding FilterKind, Mode=TwoWay}"
+                              MinWidth="120" Margin="0,0,8,0"/>
+                    <ComboBox Grid.Column="3"
+                              Style="{StaticResource FilterCombo}"
+                              ItemsSource="{Binding FilterDuplicateOptions}"
+                              SelectedItem="{Binding FilterDuplicate, Mode=TwoWay}"
+                              MinWidth="120" Margin="0,0,8,0"/>
+
+                    <Button Grid.Column="4" Content="일괄 재지정"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding BulkReassignCommand}"
+                            CommandParameter="{Binding BulkAssignTarget}"
+                            Margin="0,0,8,0"
+                            ToolTip="체크된 항목의 자동 분류를 일괄 변경"/>
+                    <Button Grid.Column="5" Content="충돌 해결"
+                            Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ResolveConflictsCommand}"
+                            ToolTip="중복 항목을 자동으로 체크 해제"/>
+                </Grid>
+
+                <!-- 후보 DataGrid -->
+                <Border Grid.Row="2"
+                        BorderBrush="{DynamicResource Theme.Border}" BorderThickness="1"
+                        CornerRadius="4">
+                    <DataGrid Style="{StaticResource V4DataGrid}"
+                              ItemsSource="{Binding CandidatesView}"
+                              AutoGenerateColumns="False">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="40">
+                                <DataGridTemplateColumn.HeaderTemplate>
+                                    <DataTemplate>
+                                        <CheckBox x:Name="HeaderCheckBox" HorizontalAlignment="Center" IsThreeState="False"
+                                                  Foreground="{DynamicResource Theme.FgPrimary}"
+                                                  Checked="OnHeaderCheckChanged"
+                                                  Unchecked="OnHeaderCheckChanged"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.HeaderTemplate>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTextColumn Header="파일" Binding="{Binding Name}" Width="2*" MinWidth="200" IsReadOnly="True"/>
+
+                            <DataGridTextColumn Header="크기"
+                                                Binding="{Binding FileSizeBytes, StringFormat='{}{0:N0} B'}"
+                                                Width="90" IsReadOnly="True"/>
+
+                            <DataGridTextColumn Header="자동 분류" Binding="{Binding KindLabel}" Width="110" IsReadOnly="True"/>
+
+                            <DataGridTextColumn Header="신뢰도" Binding="{Binding ConfidenceLabel}" Width="80" IsReadOnly="True"/>
+
+                            <DataGridTextColumn Header="상태"
+                                                Width="130" IsReadOnly="True">
+                                <DataGridTextColumn.Binding>
+                                    <Binding Path="DuplicateReason" FallbackValue=""/>
+                                </DataGridTextColumn.Binding>
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="✓ 신규"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource Theme.Success}"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDuplicate}" Value="True">
+                                                <Setter Property="Text" Value="⚠ 중복"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Theme.Warning}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Kind}" Value="Unknown">
+                                                <Setter Property="Text" Value="⚠ 분류실패"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Theme.Warning}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="경로" Binding="{Binding ShortPath}" Width="2*" MinWidth="180" IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontSize" Value="12"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource Theme.FgMuted}"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+
+                <!-- 풋터 상태 -->
+                <TextBlock Grid.Row="3"
+                           Text="{Binding SelectionStatusLabel}"
+                           Foreground="{DynamicResource Theme.FgMuted}"
+                           FontSize="11"
+                           Margin="4,8,0,0"/>
+            </Grid>
+
+            <!-- ━━ Step 3: Done ━━ -->
+            <Border Padding="20,18">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource DetailCard}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="✅"
+                               FontSize="48"
+                               HorizontalAlignment="Center"
+                               Margin="0,30,0,12"/>
+                    <TextBlock Text="임포트 완료"
+                               FontSize="20" FontWeight="Bold"
+                               Foreground="{DynamicResource Theme.Success}"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding CommitSummary}"
+                               Foreground="{DynamicResource Theme.FgPrimary}"
+                               FontSize="13"
+                               HorizontalAlignment="Center"
+                               Margin="0,12,0,0"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               MaxWidth="600"/>
+                    <!-- 완료 후 처음 단계로 복귀 (재임포트) -->
+                    <Button Content="➕ 새 임포트 시작"
+                            Style="{StaticResource PrimaryButton}"
+                            Command="{Binding BackToSelectCommand}"
+                            HorizontalAlignment="Center"
+                            Padding="20,8" Margin="0,20,0,10"
+                            FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ════════ Row 2: 풋터 버튼 (이전 / 취소 / 다음·커밋) ════════ -->
+        <Grid Grid.Row="2" Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 이전: Preview 단계에서만 -->
+            <Button Grid.Column="1" Content="◀ 이전"
+                    Style="{StaticResource SecondaryButton}"
+                    Command="{Binding BackToSelectCommand}"
+                    Visibility="{Binding IsPreview, Converter={StaticResource BoolToVisDlg}}"
+                    Margin="0,0,8,0"
+                    Padding="18,8"/>
+
+            <!-- 취소: 스캔 중 또는 Preview 단계 -->
+            <Button Grid.Column="2" Content="취소"
+                    Command="{Binding CancelScanCommand}"
+                    Margin="0,0,8,0"
+                    Padding="18,8">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsScanning}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsPreview}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+            <!-- 다음: Step 1 → 스캔 시작 -->
+            <Button Grid.Column="3" Content="다음 ▶  (스캔 시작)"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding ScanCommand}"
+                    Visibility="{Binding IsSelectFolder, Converter={StaticResource BoolToVisDlg}}"
+                    Padding="18,8"
+                    FontWeight="Bold"/>
+
+            <!-- 커밋: Step 2 → 실제 임포트 -->
+            <Button Grid.Column="3" Content="✅ 커밋  ▶"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding CommitCommand}"
+                    Visibility="{Binding IsPreview, Converter={StaticResource BoolToVisDlg}}"
+                    Padding="18,8"
+                    FontWeight="Bold"/>
+
+            <!-- 새 임포트 시작: Step 3(완료) → 처음 단계로 복귀.
+                 BackToSelectCommand 가 후보/요약을 초기화하고 Phase 를
+                 SelectFolder 로 되돌린다. 완료 후 재임포트가 불가능하던
+                 문제를 해결. -->
+            <Button Grid.Column="3" Content="➕ 새 임포트 시작"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding BackToSelectCommand}"
+                    Visibility="{Binding IsDone, Converter={StaticResource BoolToVisDlg}}"
+                    Padding="18,8"
+                    FontWeight="Bold"/>
+        </Grid>
+    </Grid>
+</UserControl>
